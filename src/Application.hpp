@@ -1,15 +1,14 @@
 #pragma once
 
-// #include "tube-control/TubeControl.hpp"
+#include "Display.hpp"
 
 /// The entry point of users C++ firmware. This comes after CubeHAL and FreeRTOS initialization.
 /// All needed classes and objects have the root here.
 class Application
 {
 public:
-    // static constexpr auto DelayTimer = &htim2;
-    // static constexpr auto MultiplexingPwmTimer = &htim1;
-    // static constexpr auto PwmTimChannel = TIM_CHANNEL_1;
+    static constexpr auto MultiplexingPwmTimer = &htim1;
+    static constexpr auto PwmTimChannel = TIM_CHANNEL_1;
 
     Application();
     [[noreturn]] void run();
@@ -24,5 +23,6 @@ private:
 
     void registerCallbacks();
 
-    // TubeControl tubeControl{MultiplexingPwmTimer, DelayTimer, PwmTimChannel, FadingTimChannel};
+    Dimming dimming{MultiplexingPwmTimer, PwmTimChannel};
+    Display display{dimming};
 };

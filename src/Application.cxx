@@ -55,19 +55,19 @@ void Application::registerCallbacks()
 //--------------------------------------------------------------------------------------------------
 void Application::multiplexingTimerUpdate()
 {
-    // getApplicationInstance().tubeControl.multiplexingTimerInterrupt();
+    getApplicationInstance().display.multiplexingStep();
 }
 
 //--------------------------------------------------------------------------------------------------
 void Application::pwmTimerCompare()
 {
-    // getApplicationInstance().tubeControl.pwmTimerInterrupt();
+    getApplicationInstance().display.pwmTimerInterrupt();
 }
 
 //--------------------------------------------------------------------------------------------------
 // skip HAL`s interupt routine to get more performance
-/*
-extern "C" void TIM1_UP_IRQHandler(void)
+
+extern "C" void TIM1_UP_TIM16_IRQHandler(void)
 {
     __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_UPDATE);
     Application::multiplexingTimerUpdate();
@@ -83,14 +83,4 @@ extern "C" void TIM1_CC_IRQHandler(void)
             Application::pwmTimerCompare();
         }
     }
-
-    if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_CC2) == true)
-    {
-        if (__HAL_TIM_GET_IT_SOURCE(Application::MultiplexingPwmTimer, TIM_IT_CC2) == SET)
-        {
-            __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_CC2);
-            Application::fadingTimerCompare();
-        }
-    }
 }
-*/

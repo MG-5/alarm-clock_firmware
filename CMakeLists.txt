@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-set(CMAKE_PROJECT_NAME alarm-clock-v3_firmware)
+set(CMAKE_PROJECT_NAME alarm-clock_firmware)
 
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
@@ -48,6 +48,8 @@ add_subdirectory(src/LED/gcem)
 target_sources(
     ${CMAKE_PROJECT_NAME} PRIVATE    
     src/Application.cxx
+
+    src/Display.cxx
 )
 
 # Add include paths
