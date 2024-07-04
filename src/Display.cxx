@@ -12,6 +12,12 @@ void Display::taskMain(void *)
     dimming.initPwm(); // also starts multiplexing
     dimming.setBrightness(25);
 
+    gridData[0] = font.getGlyph('H');
+    gridData[1] = font.getGlyph('A');
+    gridData[2] = font.getGlyph('L');
+    gridData[3] = font.getGlyph('L');
+    gridData[4] = font.getGlyph('O');
+
     // nothind to do here
     vTaskSuspend(nullptr);
 }
@@ -26,7 +32,7 @@ void Display::setup()
 //-----------------------------------------------------------------
 void Display::showInitialization()
 {
-    for (auto &grid : gridArray)
+    for (auto &grid : gridGpioArray)
         grid.write(true);
 
     uint32_t bits = 1;
@@ -98,17 +104,15 @@ void Display::multiplexingStep()
     if (++gridIndex >= NumberOfGrids)
         gridIndex = 0;
 
-    uint8_t numberToShow = gridIndex + 1;
-
     disableAllGrids();
-    sendSegmentBits(numberSegments[numberToShow]);
+    sendSegmentBits(gridData[gridIndex]);
 
-    gridArray[gridIndex].write(true);
+    gridGpioArray[gridIndex].write(true);
 }
 
 //--------------------------------------------------------------------------------------------------
 inline void Display::disableAllGrids()
 {
-    for (auto &grid : gridArray)
+    for (auto &grid : gridGpioArray)
         grid.write(false);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Dimming.hpp"
+#include "font/Font.hpp"
 #include "units/si/time.hpp"
 #include "util/gpio.hpp"
 #include "wrappers/Task.hpp"
@@ -37,7 +38,7 @@ private:
 
     static constexpr auto NumberOfGrids = 6;
 
-    std::array<util::Gpio, NumberOfGrids> gridArray //
+    std::array<util::Gpio, NumberOfGrids> gridGpioArray //
         {util::Gpio(enableGrid0_GPIO_Port, enableGrid0_Pin),
          util::Gpio(enableGrid1_GPIO_Port, enableGrid1_Pin),
          util::Gpio(enableGrid2_GPIO_Port, enableGrid2_Pin),
@@ -57,28 +58,5 @@ private:
 
     uint8_t gridIndex = 0;
 
-    /*   A
-        ----I-----
-       | \  |  / |
-      F|  H | J  |B
-       |   \|/   |
-     G1 ---- ---- G2
-       |   /|\   |
-      E|  M | K  |C
-       | /  |  \ |
-        ----L---- D */
-
-    static constexpr std::array<uint32_t, 10> numberSegments{
-        // BCDEFGGHIJKLM
-        0b11111100001001, // 0
-        0b01100000001000, // 1
-        0b11011011000000, // 2
-        0b11110001000000, // 3
-        0b01100111000000, // 4
-        0b10110111000000, // 5
-        0b10111111000000, // 6
-        0b11100000000000, // 7
-        0b11111111000000, // 8
-        0b11110111000000  // 9
-    };
+    std::array<uint32_t, NumberOfGrids> gridData{0};
 };
