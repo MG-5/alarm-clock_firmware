@@ -1,32 +1,47 @@
 #include "Display.hpp"
 #include "helpers/freertos.hpp"
+#include "sync.hpp"
 
 void Display::taskMain(void *)
 {
     setup();
+    setBrightness(100);
     vTaskDelay(toOsTicks(500.0_ms));
-    // showInitialization();
-    // vTaskDelay(toOsTicks(2.0_s));
 
-    boostConverter.write(true);
-    dimming.initPwm(); // also starts multiplexing
-    dimming.setBrightness(25);
+    showInitialization();
+    syncEventGroup.setBits(sync::WaitForDisplayInitBit);
+    vTaskDelay(toOsTicks(1.0_s));
+    syncEventGroup.setBits(sync::WaitForLedInit);
 
-    gridData[0] = font.getGlyph('H');
-    gridData[1] = font.getGlyph('A');
-    gridData[2] = font.getGlyph('L');
-    gridData[3] = font.getGlyph('L');
-    gridData[4] = font.getGlyph('O');
+    enableDisplay();
 
-    // nothind to do here
+    // nothing to do here cause interrupts will take c are of multiplexing
     vTaskSuspend(nullptr);
 }
 
 //-----------------------------------------------------------------
 void Display::setup()
 {
+    enableDisplay(false); // without multiplexing due intialization do own stuff
+    sendSegmentBits(0);
+}
+
+// -----------------------------------------------------------------
+void Display::enableDisplay(bool startMultiplexing)
+{
     heatwire.write(true);
-    sendSegmentBits(0, false, false, false);
+    boostConverter.write(true);
+
+    if (startMultiplexing)
+        dimming.initPwm(); // also starts multiplexing
+}
+
+//-----------------------------------------------------------------
+void Display::disableDisplay()
+{
+    dimming.stopPwm();
+    heatwire.write(false);
+    boostConverter.write(false);
 }
 
 //-----------------------------------------------------------------
@@ -39,7 +54,7 @@ void Display::showInitialization()
 
     while ((bits & (1 << (NumberBitsInShiftRegister - 3))) == 0)
     {
-        sendSegmentBits(bits, false, false, false);
+        sendSegmentBits(bits);
         vTaskDelay(toOsTicks(100.0_ms));
 
         bits <<= 1;
@@ -50,16 +65,22 @@ void Display::showInitialization()
 
     while ((bits & 1) == 0)
     {
-        sendSegmentBits(bits, false, false, false);
+        sendSegmentBits(bits);
         vTaskDelay(toOsTicks(100.0_ms));
 
         bits >>= 1;
         bits |= 1 << (NumberBitsInShiftRegister - 4);
     }
 
-    sendSegmentBits(bits, false, false, false);
+    sendSegmentBits(bits);
     vTaskDelay(toOsTicks(100.0_ms));
     sendSegmentBits(bits, true, true, true);
+}
+
+//-----------------------------------------------------------------
+void Display::setBrightness(uint8_t brightness)
+{
+    dimming.setBrightness(brightness);
 }
 
 //-----------------------------------------------------------------
@@ -78,6 +99,8 @@ void Display::clockPeriod()
 //-----------------------------------------------------------------
 void Display::strobePeriod()
 {
+    // there is no delay between clock level changes because
+    // the HAL consumes time enough to match shift register requirements
     shiftRegisterStrobe.write(true);
     shiftRegisterStrobe.write(false);
 }
@@ -105,7 +128,9 @@ void Display::multiplexingStep()
         gridIndex = 0;
 
     disableAllGrids();
-    sendSegmentBits(gridData[gridIndex]);
+    sendSegmentBits(gridDataArray[gridIndex].segments, gridDataArray[gridIndex].enableDots,
+                    gridDataArray[gridIndex].enableUpperBar,
+                    gridDataArray[gridIndex].enableLowerBar);
 
     gridGpioArray[gridIndex].write(true);
 }
@@ -115,4 +140,16 @@ inline void Display::disableAllGrids()
 {
     for (auto &grid : gridGpioArray)
         grid.write(false);
+}
+
+//--------------------------------------------------------------------------------------------------
+void Display::showClock(const Clock_t &clock, bool showDots)
+{
+    // add '0' to get the ASCII value of the number
+    gridDataArray[1].segments = font.getGlyph((clock.hours / 10) + '0');
+    gridDataArray[2].segments = font.getGlyph((clock.hours % 10) + '0');
+    gridDataArray[3].segments = font.getGlyph((clock.minutes / 10) + '0');
+    gridDataArray[4].segments = font.getGlyph((clock.minutes % 10) + '0');
+
+    gridDataArray[2].enableDots = showDots;
 }

@@ -6,6 +6,8 @@
 #include "util/gpio.hpp"
 #include "wrappers/Task.hpp"
 
+#include "Clock.hpp"
+
 class Display : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
@@ -19,6 +21,24 @@ public:
 
     void multiplexingStep();
     void pwmTimerInterrupt();
+    void setBrightness(uint8_t brightness);
+
+    void enableDisplay(bool startMultiplexing = true);
+    void disableDisplay();
+
+    static constexpr auto NumberOfGrids = 6;
+
+    struct GridData
+    {
+        uint32_t segments = 0;
+        bool enableDots = false;
+        bool enableUpperBar = false;
+        bool enableLowerBar = false;
+    };
+
+    std::array<GridData, NumberOfGrids> gridDataArray{};
+
+    void showClock(const Clock_t &clock, bool showDots = false);
 
 protected:
     void taskMain(void *) override;
@@ -35,8 +55,6 @@ private:
     util::Gpio shiftRegisterData{ShiftRegisterData_GPIO_Port, ShiftRegisterData_Pin};
     util::Gpio shiftRegisterClock{ShiftRegisterClock_GPIO_Port, ShiftRegisterClock_Pin};
     util::Gpio shiftRegisterStrobe{Strobe_GPIO_Port, Strobe_Pin};
-
-    static constexpr auto NumberOfGrids = 6;
 
     std::array<util::Gpio, NumberOfGrids> gridGpioArray //
         {util::Gpio(enableGrid0_GPIO_Port, enableGrid0_Pin),
@@ -57,6 +75,4 @@ private:
     void disableAllGrids();
 
     uint8_t gridIndex = 0;
-
-    std::array<uint32_t, NumberOfGrids> gridData{0};
 };

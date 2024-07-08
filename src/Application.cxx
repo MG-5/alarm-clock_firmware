@@ -73,6 +73,7 @@ extern "C" void TIM1_UP_TIM16_IRQHandler(void)
     Application::multiplexingTimerUpdate();
 }
 
+//--------------------------------------------------------------------------------------------------
 extern "C" void TIM1_CC_IRQHandler(void)
 {
     if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_CC1) == SET)

@@ -24,6 +24,12 @@ public:
         HAL_TIM_OC_Start_IT(multiplexingPwmTimer, pwmTimChannel);
     }
 
+    void stopPwm()
+    {
+        HAL_TIM_Base_Stop_IT(multiplexingPwmTimer);
+        HAL_TIM_OC_Stop_IT(multiplexingPwmTimer, pwmTimChannel);
+    }
+
     // 1% to 100%
     void setBrightness(uint8_t brightness)
     {

@@ -46,11 +46,13 @@ add_subdirectory(src/LED/gcem)
 
 # Add sources to executable
 target_sources(
-    ${CMAKE_PROJECT_NAME} PRIVATE   
+    ${CMAKE_PROJECT_NAME} PRIVATE
+    src/buttons/Buttons.cxx
     src/font/Font.cxx
     
     src/Application.cxx
     src/Display.cxx
+    src/StateMachine.cxx
 )
 
 # Add include paths
