@@ -10,7 +10,7 @@
 class Buttons : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    Buttons() : TaskWithMemberFunctionBase("buttonsPollingTask", 128, osPriorityBelowNormal3){};
+    Buttons() : TaskWithMemberFunctionBase("buttonsPollingTask", 256, osPriorityBelowNormal3){};
 
     util::Button left{{ButtonLeft_GPIO_Port, ButtonLeft_Pin}};
     util::Button right{{ButtonRight_GPIO_Port, ButtonRight_Pin}};
