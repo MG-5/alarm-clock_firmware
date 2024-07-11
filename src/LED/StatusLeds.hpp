@@ -34,7 +34,7 @@ protected:
             ledAlarm1.updateState(lastWakeTime);
             ledAlarm2.updateState(lastWakeTime);
             ledRedGreen.updateState(lastWakeTime);
-            vTaskDelayUntil(&lastWakeTime, toOsTicks(20.0_Hz));
+            vTaskDelayUntil(&lastWakeTime, toOsTicks(100.0_Hz));
         }
     }
 

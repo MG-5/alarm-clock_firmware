@@ -37,5 +37,5 @@ private:
 
     StatusLeds statusLeds{LedPwmTimer, LedAlarm1Channel, LedAlarm2Channel, LedRedChannel,
                           LedGreenChannel};
-    StateMachine stateMachine{display, statusLeds};
+    StateMachine stateMachine{display, statusLeds, buttons};
 };
