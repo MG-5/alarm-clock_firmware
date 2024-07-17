@@ -41,6 +41,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
+add_subdirectory(src/rtc/Time)
 add_subdirectory(src/util)
 add_subdirectory(src/LED/gcem)
 
@@ -49,6 +50,8 @@ target_sources(
     ${CMAKE_PROJECT_NAME} PRIVATE
     src/buttons/Buttons.cxx
     src/font/Font.cxx
+
+    src/rtc/DS3231.cxx
     
     src/Application.cxx
     src/Display.cxx

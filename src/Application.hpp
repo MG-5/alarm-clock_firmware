@@ -3,6 +3,7 @@
 #include "Display.hpp"
 #include "StateMachine.hpp"
 #include "buttons/Buttons.hpp"
+#include "rtc/RealTimeClock.hpp"
 
 /// The entry point of users C++ firmware. This comes after CubeHAL and FreeRTOS initialization.
 /// All needed classes and objects have the root here.

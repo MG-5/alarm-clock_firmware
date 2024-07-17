@@ -8,9 +8,9 @@ void Display::taskMain(void *)
     setBrightness(100);
     vTaskDelay(toOsTicks(500.0_ms));
 
-    showInitialization();
+    // showInitialization();
     syncEventGroup.setBits(sync::WaitForDisplayInitBit);
-    vTaskDelay(toOsTicks(1.0_s));
+    // vTaskDelay(toOsTicks(1.0_s));
     syncEventGroup.setBits(sync::WaitForLedInit);
 
     enableDisplay();
