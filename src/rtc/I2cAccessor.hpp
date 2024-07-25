@@ -146,6 +146,11 @@ public:
             value = ((value & 0xFF) << 8) | (value >> 8);
     }
 
+    bool hasError()
+    {
+        return errorCondition;
+    }
+
     static constexpr TickType_t Timeout{pdMS_TO_TICKS(100)};
 
 private:

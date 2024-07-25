@@ -109,6 +109,11 @@ public:
     void setInterruptOutput(bool enable);
     void setSQWRate(ds3231::SqwRate rate);
 
+    bool isCommunicationFailed()
+    {
+        return accessor.hasError();
+    }
+
 private:
     I2cAccessor &accessor;
 

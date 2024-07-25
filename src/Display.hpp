@@ -2,11 +2,10 @@
 
 #include "Dimming.hpp"
 #include "font/Font.hpp"
+#include "rtc/Time/Time.hpp"
 #include "units/si/time.hpp"
 #include "util/gpio.hpp"
 #include "wrappers/Task.hpp"
-
-#include "Clock.hpp"
 
 class Display : public util::wrappers::TaskWithMemberFunctionBase
 {
@@ -38,7 +37,8 @@ public:
 
     std::array<GridData, NumberOfGrids> gridDataArray{};
 
-    void showClock(const Clock_t &clock, bool showDots = false);
+    void setClock(Time clockToShow);
+    void showClock(bool forceShowDots = false);
 
 protected:
     void taskMain(void *) override;
@@ -75,4 +75,5 @@ private:
     void disableAllGrids();
 
     uint8_t gridIndex = 0;
+    Time currentTime;
 };

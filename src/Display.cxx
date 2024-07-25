@@ -10,19 +10,19 @@ void Display::taskMain(void *)
 
     // showInitialization();
     syncEventGroup.setBits(sync::WaitForDisplayInitBit);
+
     // vTaskDelay(toOsTicks(1.0_s));
     syncEventGroup.setBits(sync::WaitForLedInit);
-
     enableDisplay();
 
-    // nothing to do here cause interrupts will take c are of multiplexing
+    // nothing to do here cause interrupts will take care of multiplexing
     vTaskSuspend(nullptr);
 }
 
 //-----------------------------------------------------------------
 void Display::setup()
 {
-    enableDisplay(false); // without multiplexing due intialization do own stuff
+    enableDisplay(false); // without multiplexing due intialization do its stuff
     sendSegmentBits(0);
 }
 
@@ -143,13 +143,19 @@ inline void Display::disableAllGrids()
 }
 
 //--------------------------------------------------------------------------------------------------
-void Display::showClock(const Clock_t &clock, bool showDots)
+void Display::setClock(Time clockToShow)
+{
+    currentTime = clockToShow;
+}
+
+//--------------------------------------------------------------------------------------------------
+void Display::showClock(bool forceShowDots)
 {
     // add '0' to get the ASCII value of the number
-    gridDataArray[1].segments = font.getGlyph((clock.hours / 10) + '0');
-    gridDataArray[2].segments = font.getGlyph((clock.hours % 10) + '0');
-    gridDataArray[3].segments = font.getGlyph((clock.minutes / 10) + '0');
-    gridDataArray[4].segments = font.getGlyph((clock.minutes % 10) + '0');
+    gridDataArray[1].segments = font.getGlyph((currentTime.hour / 10) + '0');
+    gridDataArray[2].segments = font.getGlyph((currentTime.hour % 10) + '0');
+    gridDataArray[3].segments = font.getGlyph((currentTime.minute / 10) + '0');
+    gridDataArray[4].segments = font.getGlyph((currentTime.minute % 10) + '0');
 
-    gridDataArray[2].enableDots = showDots;
+    gridDataArray[2].enableDots = (currentTime.second % 2) == 0 || forceShowDots;
 }

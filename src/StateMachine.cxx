@@ -12,12 +12,12 @@ void StateMachine::taskMain(void *)
     syncEventGroup.waitBits(sync::WaitForLedInit, pdFALSE, pdFALSE, portMAX_DELAY);
     statusLeds.turnAllOff();
 
-    Clock_t clock = {18, 45, 0};
-    Clock_t alarmTime1 = {11, 00, 0};
-    Clock_t alarmTime2 = {10, 30, 0};
-
     while (true)
     {
+        display.gridDataArray.fill(Display::GridData{});
+        statusLeds.ledAlarm1.turnOff();
+        statusLeds.ledAlarm2.turnOff();
+
         switch (displayState)
         {
         case DisplayState::Standby:
@@ -26,34 +26,32 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::Clock:
-            display.showClock(clock, blink);
-            statusLeds.ledAlarm1.turnOff();
-            statusLeds.ledAlarm2.turnOff();
-            blink = !blink;
+            display.setClock(clockTime);
+            display.showClock();
             delayUntilEventOrTimeout(1.0_s);
             break;
 
         case DisplayState::ClockWithAlarmLeds:
-            display.showClock(clock, blink);
+            display.setClock(clockTime);
+            display.showClock();
             statusLeds.ledAlarm1.setState(alarmMode == AlarmMode::Alarm1 ||
                                           alarmMode == AlarmMode::Both);
             statusLeds.ledAlarm2.setState(alarmMode == AlarmMode::Alarm2 ||
                                           alarmMode == AlarmMode::Both);
-            blink = !blink;
             delayUntilEventOrTimeout(1.0_s);
             break;
 
         case DisplayState::DisplayAlarm1:
-            display.showClock(alarmTime1, true);
+            display.setClock(alarmTime1);
+            display.showClock(true);
             statusLeds.ledAlarm1.setState(blink);
-            statusLeds.ledAlarm2.turnOff();
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::DisplayAlarm2:
-            display.showClock(alarmTime2, true);
-            statusLeds.ledAlarm1.turnOff();
+            display.setClock(alarmTime2);
+            display.showClock(true);
             statusLeds.ledAlarm2.setState(blink);
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
@@ -83,6 +81,40 @@ void StateMachine::taskMain(void *)
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
+        case DisplayState::DisplayAlarmStatus:
+            display.gridDataArray[2].segments = font.getGlyph('A');
+            display.gridDataArray[2].enableDots = true;
+
+            switch (alarmMode)
+            {
+            case AlarmMode::Off:
+                display.gridDataArray[3].segments = font.getGlyph('O');
+                display.gridDataArray[4].segments = font.getGlyph('f');
+                display.gridDataArray[5].segments = font.getGlyph('f');
+                break;
+
+            case AlarmMode::Alarm1:
+                display.gridDataArray[3].segments = font.getGlyph('1');
+                statusLeds.ledAlarm1.turnOn();
+                break;
+
+            case AlarmMode::Alarm2:
+                display.gridDataArray[3].segments = font.getGlyph('2');
+                statusLeds.ledAlarm2.turnOn();
+                break;
+
+            case AlarmMode::Both:
+                display.gridDataArray[3].segments = font.getGlyph('1');
+                display.gridDataArray[4].segments = font.getGlyph('+');
+                display.gridDataArray[5].segments = font.getGlyph('2');
+                statusLeds.ledAlarm1.turnOn();
+                statusLeds.ledAlarm2.turnOn();
+                break;
+            }
+            if (delayUntilEventOrTimeout(3.0_s))
+                displayState = DisplayState::Clock;
+            break;
+
         default:
             break;
         }
@@ -91,10 +123,11 @@ void StateMachine::taskMain(void *)
 
 //-----------------------------------------------------------------
 void StateMachine::handleAlarmHourChange(
-    bool blink, Clock_t &alarmTime,
+    bool blink, Time &alarmTime,
     util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm)
 {
-    display.showClock(alarmTime, true);
+    display.setClock(alarmTime);
+    display.showClock(true);
     ledAlarm.turnOn();
     if (!blink)
     {
@@ -105,10 +138,11 @@ void StateMachine::handleAlarmHourChange(
 
 //-----------------------------------------------------------------
 void StateMachine::handleAlarmMinuteChange(
-    bool blink, Clock_t &alarmTime,
+    bool blink, Time &alarmTime,
     util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm)
 {
-    display.showClock(alarmTime, true);
+    display.setClock(alarmTime);
+    display.showClock(true);
     ledAlarm.turnOn();
     if (!blink)
     {
@@ -274,7 +308,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            // ToDo: go t
+            // ToDo: go to standy
         default:
             break;
         }
@@ -286,6 +320,8 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
     default:
         break;
     }
+
+    notify(1, util::wrappers::NotifyAction::SetBits);
 }
 
 //-----------------------------------------------------------------
@@ -333,6 +369,8 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     default:
         break;
     }
+
+    notify(1, util::wrappers::NotifyAction::SetBits);
 }
 
 //-----------------------------------------------------------------

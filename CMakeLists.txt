@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD 20)
+set(BUILD_TESTING OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -41,9 +42,9 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
+add_subdirectory(src/LED/gcem)
 add_subdirectory(src/rtc/Time)
 add_subdirectory(src/util)
-add_subdirectory(src/LED/gcem)
 
 # Add sources to executable
 target_sources(
@@ -52,6 +53,7 @@ target_sources(
     src/font/Font.cxx
 
     src/rtc/DS3231.cxx
+    src/rtc/RealTimeClock.cxx
     
     src/Application.cxx
     src/Display.cxx
@@ -71,4 +73,5 @@ target_link_libraries(
     core
     util
     gcem
+    Time
 )

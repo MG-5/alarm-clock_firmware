@@ -49,6 +49,21 @@ void Application::registerCallbacks()
 {
     HAL_StatusTypeDef result = HAL_OK;
 
+    result = HAL_I2C_RegisterCallback(
+        RtcBus, HAL_I2C_MASTER_TX_COMPLETE_CB_ID,
+        [](I2C_HandleTypeDef *)
+        { getApplicationInstance().i2cBusAccessor.signalTransferCompleteFromIsr(); });
+    SafeAssert(result == HAL_OK);
+
+    result = HAL_I2C_RegisterCallback(
+        RtcBus, HAL_I2C_MASTER_RX_COMPLETE_CB_ID,
+        [](I2C_HandleTypeDef *)
+        { getApplicationInstance().i2cBusAccessor.signalTransferCompleteFromIsr(); });
+    SafeAssert(result == HAL_OK);
+
+    result = HAL_I2C_RegisterCallback(
+        RtcBus, HAL_I2C_ERROR_CB_ID,
+        [](I2C_HandleTypeDef *) { getApplicationInstance().i2cBusAccessor.signalErrorFromIsr(); });
     SafeAssert(result == HAL_OK);
 }
 

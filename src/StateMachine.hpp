@@ -52,6 +52,11 @@ public:
         Both
     };
 
+    void updateClock(Time &newTime)
+    {
+        clockTime = newTime;
+    }
+
 protected:
     void taskMain(void *) override;
 
@@ -60,16 +65,20 @@ private:
     StatusLeds &statusLeds;
     Buttons &buttons;
 
+    Time clockTime;
+    Time alarmTime1{11, 00};
+    Time alarmTime2{10, 30};
+
     DisplayState displayState = DisplayState::Clock;
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
     bool blink = true;
 
     void
-    handleAlarmHourChange(bool blink, Clock_t &alarmTime,
+    handleAlarmHourChange(bool blink, Time &alarmTime,
                           util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
     void
-    handleAlarmMinuteChange(bool blink, Clock_t &alarmTime,
+    handleAlarmMinuteChange(bool blink, Time &alarmTime,
                             util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
 
     void setButtonCallbacks();
@@ -82,9 +91,10 @@ private:
     void buttonCCTPlusCallback(util::Button::Action action);
     void buttonCCTMinusCallback(util::Button::Action action);
 
-    // block task for specified time but can be unblocked by external event e.g. button press
-    void delayUntilEventOrTimeout(units::si::Time blockTime)
+    /// block task for specified time but can be unblocked by external event e.g. button press
+    /// @return true if timeout is occurred
+    bool delayUntilEventOrTimeout(units::si::Time blockTime)
     {
-        notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0, toOsTicks(blockTime));
+        return notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0, toOsTicks(blockTime)) == 0;
     }
 };

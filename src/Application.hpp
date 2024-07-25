@@ -19,6 +19,8 @@ public:
     static constexpr auto LedRedChannel = TIM_CHANNEL_3;
     static constexpr auto LedGreenChannel = TIM_CHANNEL_4;
 
+    static constexpr auto RtcBus = &hi2c1;
+
     Application();
     [[noreturn]] void run();
 
@@ -39,4 +41,7 @@ private:
     StatusLeds statusLeds{LedPwmTimer, LedAlarm1Channel, LedAlarm2Channel, LedRedChannel,
                           LedGreenChannel};
     StateMachine stateMachine{display, statusLeds, buttons};
+
+    I2cAccessor i2cBusAccessor{RtcBus};
+    RealTimeClock rtc{i2cBusAccessor, stateMachine};
 };
