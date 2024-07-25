@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Display.hpp"
-#include "StateMachine.hpp"
 #include "buttons/Buttons.hpp"
+#include "display/Display.hpp"
 #include "rtc/RealTimeClock.hpp"
+#include "state_machine/StateMachine.hpp"
 
 /// The entry point of users C++ firmware. This comes after CubeHAL and FreeRTOS initialization.
 /// All needed classes and objects have the root here.
@@ -34,12 +34,14 @@ private:
 
     void registerCallbacks();
 
-    Buttons buttons{};
-    Dimming dimming{MultiplexingPwmTimer, PwmTimChannel};
+    DisplayDimming dimming{MultiplexingPwmTimer, PwmTimChannel};
     Display display{dimming};
 
     StatusLeds statusLeds{LedPwmTimer, LedAlarm1Channel, LedAlarm2Channel, LedRedChannel,
                           LedGreenChannel};
+
+    Buttons buttons{};
+
     StateMachine stateMachine{display, statusLeds, buttons};
 
     I2cAccessor i2cBusAccessor{RtcBus};

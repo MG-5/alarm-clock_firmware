@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Display.hpp"
 #include "LED/StatusLeds.hpp"
 #include "buttons/Buttons.hpp"
+#include "display/Display.hpp"
 #include "util/gpio.hpp"
 #include "wrappers/Task.hpp"
 

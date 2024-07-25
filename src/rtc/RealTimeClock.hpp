@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DS3231.hpp"
-#include "StateMachine.hpp"
+#include "state_machine/StateMachine.hpp"
 #include "wrappers/Task.hpp"
 
 class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase

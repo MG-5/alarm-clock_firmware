@@ -5,10 +5,10 @@
 
 #include "util/MapValue.hpp"
 
-class Dimming
+class DisplayDimming
 {
 public:
-    Dimming(TIM_HandleTypeDef *multiplexingPwmTimer, uint32_t pwmTimChannel)
+    DisplayDimming(TIM_HandleTypeDef *multiplexingPwmTimer, uint32_t pwmTimChannel)
         : multiplexingPwmTimer(multiplexingPwmTimer), //
           pwmTimChannel(pwmTimChannel)
     {

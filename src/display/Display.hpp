@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Dimming.hpp"
+#include "DisplayDimming.hpp"
 #include "font/Font.hpp"
 #include "rtc/Time/Time.hpp"
 #include "units/si/time.hpp"
@@ -10,7 +10,7 @@
 class Display : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    Display(Dimming &dimming)
+    Display(DisplayDimming &dimming)
         : TaskWithMemberFunctionBase("displayTask", 256, osPriorityAboveNormal4), //
           dimming(dimming){};
 
@@ -44,7 +44,7 @@ protected:
     void taskMain(void *) override;
 
 private:
-    Dimming &dimming;
+    DisplayDimming &dimming;
 
     util::Gpio heatwire{enableHeatwire_GPIO_Port, enableHeatwire_Pin};
     util::Gpio boostConverter{enable35V_GPIO_Port, enable35V_Pin};
