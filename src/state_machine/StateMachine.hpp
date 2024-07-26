@@ -3,6 +3,8 @@
 #include "LED/StatusLeds.hpp"
 #include "buttons/Buttons.hpp"
 #include "display/Display.hpp"
+#include "rtc/RealTimeClock.hpp"
+
 #include "util/gpio.hpp"
 #include "wrappers/Task.hpp"
 
@@ -11,13 +13,14 @@
 class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(Display &display, StatusLeds &statusLeds, Buttons &buttons)
-        : TaskWithMemberFunctionBase("stateMachineTask", 256, osPriorityNormal4), //
+    StateMachine(Display &display, StatusLeds &statusLeds, Buttons &buttons, RealTimeClock &rtc)
+        : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityNormal4), //
           display(display),                                                       //
           statusLeds(statusLeds),                                                 //
-          buttons(buttons)
+          buttons(buttons),                                                       //
+          rtc(rtc)
     {
-        setButtonCallbacks();
+        assignButtonCallbacks();
     }
 
     enum class DisplayState
@@ -52,11 +55,6 @@ public:
         Both
     };
 
-    void updateClock(Time &newTime)
-    {
-        clockTime = newTime;
-    }
-
 protected:
     void taskMain(void *) override;
 
@@ -64,24 +62,24 @@ private:
     Display &display;
     StatusLeds &statusLeds;
     Buttons &buttons;
-
-    Time clockTime;
-    Time alarmTime1{11, 00};
-    Time alarmTime2{10, 30};
+    RealTimeClock &rtc;
 
     DisplayState displayState = DisplayState::Clock;
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
     bool blink = true;
 
-    void
-    handleAlarmHourChange(bool blink, Time &alarmTime,
-                          util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
-    void
-    handleAlarmMinuteChange(bool blink, Time &alarmTime,
-                            util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
+    Time alarmTimeToModify;
 
-    void setButtonCallbacks();
+    void displayLedInitialization();
+    void waitForRtc();
+
+    void
+    handleAlarmHourChange(util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
+    void
+    handleAlarmMinuteChange(util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
+
+    void assignButtonCallbacks();
 
     void buttonLeftCallback(util::Button::Action action);
     void buttonRightCallback(util::Button::Action action);

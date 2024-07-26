@@ -42,8 +42,8 @@ private:
 
     Buttons buttons{};
 
-    StateMachine stateMachine{display, statusLeds, buttons};
-
     I2cAccessor i2cBusAccessor{RtcBus};
-    RealTimeClock rtc{i2cBusAccessor, stateMachine};
+    RealTimeClock rtc{i2cBusAccessor};
+
+    StateMachine stateMachine{display, statusLeds, buttons, rtc};
 };

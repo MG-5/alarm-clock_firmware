@@ -1,26 +1,37 @@
 #pragma once
 
 #include "DS3231.hpp"
-#include "state_machine/StateMachine.hpp"
 #include "wrappers/Task.hpp"
 
 class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    RealTimeClock(I2cAccessor &i2cAccessor, StateMachine &stateMachine)
+    RealTimeClock(I2cAccessor &i2cAccessor)
         : TaskWithMemberFunctionBase("rtcTask", 256, osPriorityBelowNormal5), //
-          i2cAccessor(i2cAccessor),                                           //
-          stateMachine(stateMachine){};
+          i2cAccessor(i2cAccessor){};
+
+    bool isRtcOnline();
+    bool wasRtcOnlineOnce();
+
+    Time getClockTime() const;
+    Time getAlarmTime1();
+    Time getAlarmTime2();
+
+    void writeAlarmTime1(Time &newAlarmTime);
+    void writeAlarmTime2(Time &newAlarmTime);
 
 protected:
     [[noreturn]] void taskMain(void *) override;
 
 private:
     I2cAccessor &i2cAccessor;
-    StateMachine &stateMachine;
-
     DS3231 rtcModule{i2cAccessor};
 
+    bool wasRtcOnlineOnceBool = false;
+
+    Time clockTime;
+    Time alarmTime1;
+    Time alarmTime2;
+
     void initRTC();
-    bool isRtcOnline();
 };

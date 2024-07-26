@@ -4,19 +4,17 @@
 
 void StateMachine::taskMain(void *)
 {
-    syncEventGroup.waitBits(sync::WaitForDisplayInitBit, pdFALSE, pdFALSE, portMAX_DELAY);
-
-    statusLeds.ledRedGreen.setColor(util::pwm_led::DualLedColor::Orange);
-    statusLeds.turnAllOn();
-
-    syncEventGroup.waitBits(sync::WaitForLedInit, pdFALSE, pdFALSE, portMAX_DELAY);
-    statusLeds.turnAllOff();
+    waitForRtc();
+    displayLedInitialization();
 
     while (true)
     {
         display.gridDataArray.fill(Display::GridData{});
-        statusLeds.ledAlarm1.turnOff();
-        statusLeds.ledAlarm2.turnOff();
+        statusLeds.turnAllOff();
+
+        // ToDo: replace it with reading general error state
+        if (!rtc.isRtcOnline())
+            statusLeds.ledRedGreen.setColor(util::pwm_led::DualLedColor::Red);
 
         switch (displayState)
         {
@@ -26,13 +24,13 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::Clock:
-            display.setClock(clockTime);
+            display.setClock(rtc.getClockTime());
             display.showClock();
             delayUntilEventOrTimeout(1.0_s);
             break;
 
         case DisplayState::ClockWithAlarmLeds:
-            display.setClock(clockTime);
+            display.setClock(rtc.getClockTime());
             display.showClock();
             statusLeds.ledAlarm1.setState(alarmMode == AlarmMode::Alarm1 ||
                                           alarmMode == AlarmMode::Both);
@@ -42,7 +40,7 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::DisplayAlarm1:
-            display.setClock(alarmTime1);
+            display.setClock(rtc.getAlarmTime1());
             display.showClock(true);
             statusLeds.ledAlarm1.setState(blink);
             blink = !blink;
@@ -50,7 +48,7 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::DisplayAlarm2:
-            display.setClock(alarmTime2);
+            display.setClock(rtc.getAlarmTime2());
             display.showClock(true);
             statusLeds.ledAlarm2.setState(blink);
             blink = !blink;
@@ -58,25 +56,25 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::ChangeAlarm1Hour:
-            handleAlarmHourChange(blink, alarmTime1, statusLeds.ledAlarm1);
+            handleAlarmHourChange(statusLeds.ledAlarm1);
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm2Hour:
-            handleAlarmHourChange(blink, alarmTime2, statusLeds.ledAlarm2);
+            handleAlarmHourChange(statusLeds.ledAlarm2);
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm1Minute:
-            handleAlarmMinuteChange(blink, alarmTime1, statusLeds.ledAlarm1);
+            handleAlarmMinuteChange(statusLeds.ledAlarm1);
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm2Minute:
-            handleAlarmMinuteChange(blink, alarmTime2, statusLeds.ledAlarm2);
+            handleAlarmMinuteChange(statusLeds.ledAlarm2);
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
@@ -122,11 +120,33 @@ void StateMachine::taskMain(void *)
 };
 
 //-----------------------------------------------------------------
+void StateMachine::displayLedInitialization()
+{
+    display.setup();
+
+    /*
+    display.showInitialization();
+    statusLeds.ledRedGreen.setColor(util::pwm_led::DualLedColor::Orange);
+    statusLeds.turnAllOn();
+    vTaskDelay(toOsTicks(1.0_s));
+    statusLeds.turnAllOff();
+    */
+    display.enableDisplay(); // start multiplexing
+}
+
+//-----------------------------------------------------------------
+void StateMachine::waitForRtc()
+{
+    statusLeds.ledRedGreen.setColorBlinking(util::pwm_led::DualLedColor::Red, 2.0_Hz);
+    syncEventGroup.waitBits(sync::RtcHasRespondedOnce, pdFALSE, pdFALSE, portMAX_DELAY);
+    statusLeds.ledRedGreen.turnOff();
+}
+
+//-----------------------------------------------------------------
 void StateMachine::handleAlarmHourChange(
-    bool blink, Time &alarmTime,
     util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm)
 {
-    display.setClock(alarmTime);
+    display.setClock(alarmTimeToModify);
     display.showClock(true);
     ledAlarm.turnOn();
     if (!blink)
@@ -138,10 +158,9 @@ void StateMachine::handleAlarmHourChange(
 
 //-----------------------------------------------------------------
 void StateMachine::handleAlarmMinuteChange(
-    bool blink, Time &alarmTime,
     util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm)
 {
-    display.setClock(alarmTime);
+    display.setClock(alarmTimeToModify);
     display.showClock(true);
     ledAlarm.turnOn();
     if (!blink)
@@ -164,13 +183,13 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         switch (displayState)
         {
         case DisplayState::Clock:
+            alarmTimeToModify = rtc.getAlarmTime1();
             displayState = DisplayState::DisplayAlarm1;
-            // ToDo: read RTC alarm 1 time
             break;
 
         case DisplayState::DisplayAlarm1:
+            alarmTimeToModify = rtc.getAlarmTime2();
             displayState = DisplayState::DisplayAlarm2;
-            // ToDo: read RTC alarm 2 time
             break;
 
         case DisplayState::DisplayAlarm2:
@@ -182,6 +201,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::ChangeAlarm1Minute:
+            rtc.writeAlarmTime1(alarmTimeToModify);
+            alarmMode = AlarmMode::Alarm1;
             displayState = DisplayState::DisplayAlarm1;
             break;
 
@@ -190,6 +211,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::ChangeAlarm2Minute:
+            rtc.writeAlarmTime2(alarmTimeToModify);
+            alarmMode = AlarmMode::Alarm2;
             displayState = DisplayState::DisplayAlarm2;
             break;
         default:
@@ -246,6 +269,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
     switch (action)
     {
     case util::Button::Action::ShortPress:
+    {
         switch (displayState)
         {
         case DisplayState::Clock:
@@ -278,12 +302,14 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
         case DisplayState::ChangeAlarm1Hour:
         case DisplayState::ChangeAlarm2Hour:
-            // ToDo: increment alarm hour
+            blink = true;
+            alarmTimeToModify.addHours(1);
             break;
 
         case DisplayState::ChangeAlarm1Minute:
         case DisplayState::ChangeAlarm2Minute:
-            // ToDo: increment alarm minute
+            blink = true;
+            alarmTimeToModify.addMinutes(5);
             break;
 
         case DisplayState::Standby:
@@ -292,9 +318,13 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         default:
             break;
         }
-        break;
 
+        notify(1, util::wrappers::NotifyAction::SetBits);
+
+        break;
+    }
     case util::Button::Action::LongPress:
+    {
         switch (displayState)
         {
         case DisplayState::ChangeAlarm1Hour:
@@ -308,20 +338,18 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            // ToDo: go to standy
+            // ToDo: go to standby
         default:
             break;
         }
         break;
-
+    }
     case util::Button::Action::StopLongPress:
         // ToDo: restart timeout timer
 
     default:
         break;
     }
-
-    notify(1, util::wrappers::NotifyAction::SetBits);
 }
 
 //-----------------------------------------------------------------
@@ -369,8 +397,6 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     default:
         break;
     }
-
-    notify(1, util::wrappers::NotifyAction::SetBits);
 }
 
 //-----------------------------------------------------------------
@@ -394,7 +420,7 @@ void StateMachine::buttonCCTMinusCallback(util::Button::Action action)
 }
 
 //-----------------------------------------------------------------
-void StateMachine::setButtonCallbacks()
+void StateMachine::assignButtonCallbacks()
 {
     buttons.left.setCallback(
         std::bind(&StateMachine::buttonLeftCallback, this, std::placeholders::_1));

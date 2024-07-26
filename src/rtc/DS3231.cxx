@@ -42,13 +42,12 @@ std::optional<Date> DS3231::getDate()
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setTime(uint8_t hour, uint8_t min, uint8_t sec)
+void DS3231::setTime(const Time &newTime)
 {
-    if (hour >= 24 || min >= 60 || sec >= 60)
-        return;
-
     constexpr auto NumberOfBytes = 3;
-    uint8_t dataToWrite[NumberOfBytes] = {decToBcd(sec), decToBcd(min), decToBcd(hour)};
+    uint8_t dataToWrite[NumberOfBytes] = {decToBcd(newTime.second), //
+                                          decToBcd(newTime.minute), //
+                                          decToBcd(newTime.hour)};
 
     accessor.beginTransaction(SlaveAddress);
     accessor.writeToRegister(Register::Seconds, dataToWrite, NumberOfBytes);
@@ -95,17 +94,14 @@ void DS3231::setDOW(uint8_t dow)
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm1(const uint8_t sec, const uint8_t min, const uint8_t hour)
+void DS3231::setAlarm1(const Time &newAlarmTime)
 {
-    if (sec >= 60 || min >= 60 || hour >= 24)
-        return;
-
     constexpr auto NumberOfBytes = 4;
     uint8_t dataToWrite[NumberOfBytes] = {
-        decToBcd(sec),     //
-        decToBcd(min),     //
-        decToBcd(hour),    //
-        1 << AlarmMaskBit, // enable A1M4 bit
+        decToBcd(newAlarmTime.second), //
+        decToBcd(newAlarmTime.minute), //
+        decToBcd(newAlarmTime.hour),   //
+        1 << AlarmMaskBit,             // enable A1M4 bit
     };
 
     accessor.beginTransaction(SlaveAddress);
@@ -149,16 +145,13 @@ void DS3231::setAlarm1Interrupt(bool enable)
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm2(const uint8_t min, const uint8_t hour)
+void DS3231::setAlarm2(const Time &newAlarmTime)
 {
-    if (min >= 60 || hour >= 24)
-        return;
-
     constexpr auto NumberOfBytes = 3;
     uint8_t dataToWrite[NumberOfBytes] = {
-        decToBcd(min),     //
-        decToBcd(hour),    //
-        1 << AlarmMaskBit, // enable A1M4 bit
+        decToBcd(newAlarmTime.minute), //
+        decToBcd(newAlarmTime.hour),   //
+        1 << AlarmMaskBit,             // enable A1M4 bit
     };
 
     accessor.beginTransaction(SlaveAddress);
@@ -178,7 +171,7 @@ std::optional<Time> DS3231::getAlarm2()
     accessor.endTransaction();
 
     if (transactionResult)
-        return Time(bcdToDec(data[2]), bcdToDec(data[1]));
+        return Time(bcdToDec(data[1]), bcdToDec(data[0]));
 
     return {};
 }

@@ -85,18 +85,18 @@ public:
 
     [[nodiscard]] std::optional<Time> getTime();
     [[nodiscard]] std::optional<Date> getDate();
-    void setTime(uint8_t hour, uint8_t min, uint8_t sec);
+    void setTime(const Time &newTime);
     void setHour(uint8_t hour);
     void setDate(uint8_t day, uint8_t month, uint16_t year);
     void setDOW(uint8_t dow);
 
-    void setAlarm1(const uint8_t sec, const uint8_t min, const uint8_t hour);
+    void setAlarm1(const Time &newAlarmTime);
     [[nodiscard]] std::optional<Time> getAlarm1();
     void clearAlarm1Flag();
     [[nodiscard]] std::optional<bool> isAlarm1Triggered();
     void setAlarm1Interrupt(bool enable);
 
-    void setAlarm2(const uint8_t min, const uint8_t hour);
+    void setAlarm2(const Time &newAlarmTime);
     [[nodiscard]] std::optional<Time> getAlarm2();
     void clearAlarm2Flag();
     [[nodiscard]] std::optional<bool> isAlarm2Triggered();

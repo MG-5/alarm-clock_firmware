@@ -5,14 +5,11 @@
 #include "rtc/Time/Time.hpp"
 #include "units/si/time.hpp"
 #include "util/gpio.hpp"
-#include "wrappers/Task.hpp"
 
-class Display : public util::wrappers::TaskWithMemberFunctionBase
+class Display
 {
 public:
-    Display(DisplayDimming &dimming)
-        : TaskWithMemberFunctionBase("displayTask", 256, osPriorityAboveNormal4), //
-          dimming(dimming){};
+    Display(DisplayDimming &dimming) : dimming(dimming){};
 
     // APP = 80MHz -> 1MHz = 1µs -> prescaler 80-1
     // auto reload period = 249 -> interrupt every 250µs
@@ -21,6 +18,9 @@ public:
     void multiplexingStep();
     void pwmTimerInterrupt();
     void setBrightness(uint8_t brightness);
+
+    void setup();
+    void showInitialization();
 
     void enableDisplay(bool startMultiplexing = true);
     void disableDisplay();
@@ -39,9 +39,6 @@ public:
 
     void setClock(Time clockToShow);
     void showClock(bool forceShowDots = false);
-
-protected:
-    void taskMain(void *) override;
 
 private:
     DisplayDimming &dimming;
@@ -63,9 +60,6 @@ private:
          util::Gpio(enableGrid3_GPIO_Port, enableGrid3_Pin),
          util::Gpio(enableGrid4_GPIO_Port, enableGrid4_Pin),
          util::Gpio(enableGrid5_GPIO_Port, enableGrid5_Pin)};
-
-    void setup();
-    void showInitialization();
 
     void clockPeriod();
     void strobePeriod();

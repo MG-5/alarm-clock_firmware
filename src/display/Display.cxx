@@ -2,28 +2,13 @@
 #include "helpers/freertos.hpp"
 #include "sync.hpp"
 
-void Display::taskMain(void *)
-{
-    setup();
-    setBrightness(100);
-    vTaskDelay(toOsTicks(500.0_ms));
-
-    // showInitialization();
-    syncEventGroup.setBits(sync::WaitForDisplayInitBit);
-
-    // vTaskDelay(toOsTicks(1.0_s));
-    syncEventGroup.setBits(sync::WaitForLedInit);
-    enableDisplay();
-
-    // nothing to do here cause interrupts will take care of multiplexing
-    vTaskSuspend(nullptr);
-}
-
 //-----------------------------------------------------------------
 void Display::setup()
 {
     enableDisplay(false); // without multiplexing due intialization do its stuff
     sendSegmentBits(0);
+    setBrightness(100);
+    vTaskDelay(toOsTicks(500.0_ms));
 }
 
 // -----------------------------------------------------------------
