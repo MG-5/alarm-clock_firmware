@@ -15,7 +15,7 @@ public:
     // auto reload period = 249 -> interrupt every 250µs
     static constexpr auto MultiplexingStepPeriod = 250.0_us;
 
-    void multiplexingStep();
+    void multiplexingInterrupt();
     void pwmTimerInterrupt();
     void setBrightness(uint8_t brightness);
 
@@ -63,8 +63,8 @@ private:
 
     void clockPeriod();
     void strobePeriod();
-    void sendSegmentBits(uint32_t bits, bool enableDots = false, bool enableUpperBar = false,
-                         bool enableLowerBar = false);
+    void sendSegmentBits(uint32_t bits, bool forceLatch = true, bool enableDots = false,
+                         bool enableUpperBar = false, bool enableLowerBar = false);
 
     void disableAllGrids();
 

@@ -70,7 +70,7 @@ void Application::registerCallbacks()
 //--------------------------------------------------------------------------------------------------
 void Application::multiplexingTimerUpdate()
 {
-    getApplicationInstance().display.multiplexingStep();
+    getApplicationInstance().display.multiplexingInterrupt();
 }
 
 //--------------------------------------------------------------------------------------------------

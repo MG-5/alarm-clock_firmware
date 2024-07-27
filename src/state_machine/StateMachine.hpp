@@ -44,7 +44,8 @@ public:
     {
         Off,
         Sunrise,
-        Vibration
+        Vibration,
+        Snooze
     };
 
     enum class AlarmMode
@@ -74,10 +75,10 @@ private:
     void displayLedInitialization();
     void waitForRtc();
 
-    void
-    handleAlarmHourChange(util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
-    void
-    handleAlarmMinuteChange(util::pwm_led::SingleLed<StatusLeds::NumberOfResolutionBits> &ledAlarm);
+    void handleAlarmHourChange(StatusLeds::SingleLed &ledAlarm);
+    void handleAlarmMinuteChange(StatusLeds::SingleLed &ledAlarm);
+
+    void showCurrentAlarmMode();
 
     void assignButtonCallbacks();
 

@@ -50,11 +50,10 @@ public:
     static constexpr auto PwmSteps = 1024;
     static constexpr auto NumberOfResolutionBits = std::bit_width<size_t>(PwmSteps - 1);
 
-    util::pwm_led::SingleLed<NumberOfResolutionBits> ledAlarm1{
-        util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm1Channel}};
+    using SingleLed = util::pwm_led::SingleLed<NumberOfResolutionBits>;
 
-    util::pwm_led::SingleLed<NumberOfResolutionBits> ledAlarm2{
-        util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm2Channel}};
+    SingleLed ledAlarm1{util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm1Channel}};
+    SingleLed ledAlarm2{util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm2Channel}};
 
     util::pwm_led::DualLed<NumberOfResolutionBits> ledRedGreen{
         util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledRedChannel},

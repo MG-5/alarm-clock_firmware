@@ -18,7 +18,8 @@ void Display::enableDisplay(bool startMultiplexing)
     boostConverter.write(true);
 
     if (startMultiplexing)
-        dimming.initPwm(); // also starts multiplexing
+        dimming.initPwm(); // this line starts multiplexing by enabling the timer interrupt
+                           // the rest of the multiplexing is done inside timer interrupt
 }
 
 //-----------------------------------------------------------------
@@ -59,7 +60,7 @@ void Display::showInitialization()
 
     sendSegmentBits(bits);
     vTaskDelay(toOsTicks(100.0_ms));
-    sendSegmentBits(bits, true, true, true);
+    sendSegmentBits(bits, true, true, true, true);
 }
 
 //-----------------------------------------------------------------
@@ -91,7 +92,7 @@ void Display::strobePeriod()
 }
 
 //-----------------------------------------------------------------
-void Display::sendSegmentBits(uint32_t bits, bool enableDots, bool enableUpperBar,
+void Display::sendSegmentBits(uint32_t bits, bool forceLatch, bool enableDots, bool enableUpperBar,
                               bool enableLowerBar)
 {
     bits <<= 3; // shift bits to make place for N (upperBar), O_DP (dots) and P_MIN_SEC (lowerBar)
@@ -103,19 +104,21 @@ void Display::sendSegmentBits(uint32_t bits, bool enableDots, bool enableUpperBa
         clockPeriod();
     }
 
-    strobePeriod();
+    if (forceLatch)
+        strobePeriod();
 }
 
 //-----------------------------------------------------------------
-void Display::multiplexingStep()
+void Display::multiplexingInterrupt()
 {
     if (++gridIndex >= NumberOfGrids)
         gridIndex = 0;
 
-    disableAllGrids();
-    sendSegmentBits(gridDataArray[gridIndex].segments, gridDataArray[gridIndex].enableDots,
+    sendSegmentBits(gridDataArray[gridIndex].segments, false, gridDataArray[gridIndex].enableDots,
                     gridDataArray[gridIndex].enableUpperBar,
                     gridDataArray[gridIndex].enableLowerBar);
+    disableAllGrids();
+    strobePeriod();
 
     gridGpioArray[gridIndex].write(true);
 }
