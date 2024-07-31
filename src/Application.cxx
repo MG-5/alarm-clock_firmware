@@ -100,3 +100,9 @@ extern "C" void TIM1_CC_IRQHandler(void)
         }
     }
 }
+
+//--------------------------------------------------------------------------------------------------
+void Application::timeoutCallback(TimerHandle_t timer)
+{
+    getApplicationInstance().stateMachine.handleTimeoutTimer();
+}

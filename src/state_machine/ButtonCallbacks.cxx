@@ -24,9 +24,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::DisplayAlarm2:
-            // ToDo: go to Clock with alarm LEDs and start timeout timer
-            // displayState = DisplayState::ClockWithAlarmLeds;
-            displayState = DisplayState::Clock;
+            resetTimeoutTimer();
+            displayState = DisplayState::ClockWithAlarmLeds;
             break;
 
         case DisplayState::ChangeAlarm1Hour:
@@ -216,6 +215,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             [[fallthrough]];
         default:
             // return to clock
+            resetTimeoutTimer();
             displayState = DisplayState::ClockWithAlarmLeds;
             break;
         }

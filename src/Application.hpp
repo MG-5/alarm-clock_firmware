@@ -28,6 +28,7 @@ public:
 
     static void multiplexingTimerUpdate();
     static void pwmTimerCompare();
+    static void timeoutCallback(TimerHandle_t timer);
 
 private:
     static inline Application *instance{nullptr};
@@ -45,5 +46,5 @@ private:
     I2cAccessor i2cBusAccessor{RtcBus};
     RealTimeClock rtc{i2cBusAccessor};
 
-    StateMachine stateMachine{display, statusLeds, buttons, rtc};
+    StateMachine stateMachine{display, statusLeds, buttons, rtc, &timeoutCallback};
 };

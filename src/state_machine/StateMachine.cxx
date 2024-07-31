@@ -83,7 +83,7 @@ void StateMachine::taskMain(void *)
         case DisplayState::DisplayAlarmStatus:
             showCurrentAlarmMode();
             if (delayUntilEventOrTimeout(3.0_s))
-                displayState = DisplayState::Clock;
+                displayState = DisplayState::ClockWithAlarmLeds;
             break;
 
         default:

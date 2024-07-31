@@ -13,12 +13,14 @@
 class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(Display &display, StatusLeds &statusLeds, Buttons &buttons, RealTimeClock &rtc)
+    StateMachine(Display &display, StatusLeds &statusLeds, Buttons &buttons, RealTimeClock &rtc,
+                 TimerCallbackFunction_t timeoutCallback)
         : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityNormal4), //
           display(display),                                                       //
           statusLeds(statusLeds),                                                 //
           buttons(buttons),                                                       //
-          rtc(rtc)
+          rtc(rtc),                                                               //
+          timeoutCallback(timeoutCallback)
     {
         assignButtonCallbacks();
     }
@@ -56,6 +58,15 @@ public:
         Both
     };
 
+    void handleTimeoutTimer()
+    {
+        if (displayState == DisplayState::ClockWithAlarmLeds)
+        {
+            displayState = DisplayState::Clock;
+            notify(1, util::wrappers::NotifyAction::SetBits);
+        }
+    }
+
 protected:
     void taskMain(void *) override;
 
@@ -89,6 +100,31 @@ private:
     void buttonBrightnessMinusCallback(util::Button::Action action);
     void buttonCCTPlusCallback(util::Button::Action action);
     void buttonCCTMinusCallback(util::Button::Action action);
+
+    TimerCallbackFunction_t timeoutCallback = nullptr;
+    TimerHandle_t timeoutTimer{
+        xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdFALSE, nullptr, timeoutCallback)};
+
+    void setTimeoutTimerPeriod(units::si::Time period)
+    {
+        xTimerChangePeriod(timeoutTimer, toOsTicks(period), 0);
+    }
+
+    void startTimeoutTimer()
+    {
+        if (xTimerIsTimerActive(timeoutTimer) == pdFALSE)
+            xTimerStart(timeoutTimer, 0);
+    }
+
+    void stopTimeoutTimer()
+    {
+        xTimerStop(timeoutTimer, 0);
+    }
+
+    void resetTimeoutTimer()
+    {
+        xTimerReset(timeoutTimer, 0);
+    }
 
     /// block task for specified time but can be unblocked by external event e.g. button press
     /// @return true if timeout is occurred
