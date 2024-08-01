@@ -81,33 +81,33 @@ struct Date
 class DS3231
 {
 public:
-    DS3231(I2cAccessor &accessor) : accessor(accessor){};
+    DS3231(I2cAccessor &accessor) : accessor(accessor) {};
 
     [[nodiscard]] std::optional<Time> getTime();
     [[nodiscard]] std::optional<Date> getDate();
-    void setTime(const Time &newTime);
-    void setHour(uint8_t hour);
-    void setDate(uint8_t day, uint8_t month, uint16_t year);
-    void setDOW(uint8_t dow);
+    bool setTime(const Time &newTime);
+    bool setHour(uint8_t hour);
+    bool setDate(uint8_t day, uint8_t month, uint16_t year);
+    bool setDOW(uint8_t dow);
 
-    void setAlarm1(const Time &newAlarmTime);
+    bool setAlarm1(const Time &newAlarmTime);
     [[nodiscard]] std::optional<Time> getAlarm1();
-    void clearAlarm1Flag();
+    bool clearAlarm1Flag();
     [[nodiscard]] std::optional<bool> isAlarm1Triggered();
-    void setAlarm1Interrupt(bool enable);
+    bool setAlarm1Interrupt(bool enable);
 
-    void setAlarm2(const Time &newAlarmTime);
+    bool setAlarm2(const Time &newAlarmTime);
     [[nodiscard]] std::optional<Time> getAlarm2();
-    void clearAlarm2Flag();
+    bool clearAlarm2Flag();
     [[nodiscard]] std::optional<bool> isAlarm2Triggered();
-    void setAlarm2Interrupt(bool enable);
+    bool setAlarm2Interrupt(bool enable);
 
-    void forceTemperatureUpdate();
+    bool forceTemperatureUpdate();
     std::optional<float> getTemperature();
 
-    void enable32KHz(bool enable);
-    void setInterruptOutput(bool enable);
-    void setSQWRate(ds3231::SqwRate rate);
+    bool enable32KHz(bool enable);
+    bool setInterruptOutput(bool enable);
+    bool setSQWRate(ds3231::SqwRate rate);
 
     bool isCommunicationFailed()
     {
@@ -123,9 +123,9 @@ private:
         Alarm2
     };
 
-    void clearAlarmFlag(Alarm alarm);
+    bool clearAlarmFlag(Alarm alarm);
     std::optional<bool> isAlarmTriggered(Alarm alarm);
-    void setAlarmInterrupt(bool enable, Alarm alarm);
+    bool setAlarmInterrupt(bool enable, Alarm alarm);
 
     [[nodiscard]] uint8_t decToBcd(uint8_t val);
     [[nodiscard]] uint8_t bcdToDec(uint8_t val);

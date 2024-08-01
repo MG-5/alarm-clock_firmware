@@ -105,13 +105,19 @@ Time RealTimeClock::getAlarmTime2()
 }
 
 //--------------------------------------------------------------------------------------------------
-void RealTimeClock::writeAlarmTime1(Time &newAlarmTime)
+bool RealTimeClock::writeAlarmTime1(Time &newAlarmTime)
 {
-    rtcModule.setAlarm1(newAlarmTime);
+    return rtcModule.setAlarm1(newAlarmTime);
 }
 
 //--------------------------------------------------------------------------------------------------
-void RealTimeClock::writeAlarmTime2(Time &newAlarmTime)
+bool RealTimeClock::writeAlarmTime2(Time &newAlarmTime)
 {
-    rtcModule.setAlarm2(newAlarmTime);
+    return rtcModule.setAlarm2(newAlarmTime);
+}
+
+//--------------------------------------------------------------------------------------------------
+bool RealTimeClock::writeClockTime(Time &newClockTime)
+{
+    return rtcModule.setTime(newClockTime);
 }

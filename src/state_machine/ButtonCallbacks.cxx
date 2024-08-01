@@ -1,5 +1,40 @@
 #include "StateMachine.hpp"
 
+void StateMachine::handleTimeoutTimer()
+{
+    switch (displayState)
+    {
+    case DisplayState::ClockWithAlarmLeds:
+        stopTimeoutTimer();
+        displayState = DisplayState::Clock;
+        break;
+
+    case DisplayState::ChangeAlarm1Hour:
+    case DisplayState::ChangeAlarm2Hour:
+    case DisplayState::ChangeClockHour:
+        blink = false;
+        timeToModify.addHours(1);
+        break;
+
+    case DisplayState::ChangeAlarm1Minute:
+    case DisplayState::ChangeAlarm2Minute:
+        blink = false;
+        timeToModify.addMinutes(5);
+        break;
+
+    case DisplayState::ChangeClockMinute:
+        blink = false;
+        timeToModify.addMinutes(1);
+        break;
+
+    default: // as fallback
+        stopTimeoutTimer();
+        break;
+    }
+
+    notify(1, util::wrappers::NotifyAction::SetBits);
+}
+
 //-----------------------------------------------------------------
 void StateMachine::buttonLeftCallback(util::Button::Action action)
 {
@@ -14,18 +49,17 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         {
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            alarmTimeToModify = rtc.getAlarmTime1();
+            timeToModify = rtc.getAlarmTime1();
             displayState = DisplayState::DisplayAlarm1;
             break;
 
         case DisplayState::DisplayAlarm1:
-            alarmTimeToModify = rtc.getAlarmTime2();
+            timeToModify = rtc.getAlarmTime2();
             displayState = DisplayState::DisplayAlarm2;
             break;
 
         case DisplayState::DisplayAlarm2:
-            resetTimeoutTimer();
-            displayState = DisplayState::ClockWithAlarmLeds;
+            goToDefaultState();
             break;
 
         case DisplayState::ChangeAlarm1Hour:
@@ -33,7 +67,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::ChangeAlarm1Minute:
-            rtc.writeAlarmTime1(alarmTimeToModify);
+            signalResult(rtc.writeAlarmTime1(timeToModify));
             alarmMode = AlarmMode::Alarm1;
             displayState = DisplayState::DisplayAlarm1;
             break;
@@ -43,9 +77,18 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::ChangeAlarm2Minute:
-            rtc.writeAlarmTime2(alarmTimeToModify);
+            signalResult(rtc.writeAlarmTime2(timeToModify));
             alarmMode = AlarmMode::Alarm2;
             displayState = DisplayState::DisplayAlarm2;
+            break;
+
+        case DisplayState::ChangeClockHour:
+            displayState = DisplayState::ChangeClockMinute;
+            break;
+
+        case DisplayState::ChangeClockMinute:
+            signalResult(rtc.writeClockTime(timeToModify));
+            goToDefaultState();
             break;
 
         case DisplayState::Standby:
@@ -69,10 +112,12 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         switch (displayState)
         {
         case DisplayState::DisplayAlarm1:
+            blink = true;
             displayState = DisplayState::ChangeAlarm1Hour;
             break;
 
         case DisplayState::DisplayAlarm2:
+            blink = true;
             displayState = DisplayState::ChangeAlarm2Hour;
             break;
 
@@ -87,6 +132,17 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         {
             alarmState = AlarmState::Off;
             // ToDo: disable vibration
+        }
+
+        switch (displayState)
+        {
+        case DisplayState::Clock:
+        case DisplayState::ClockWithAlarmLeds:
+            // ToDo: go to standby
+            break;
+
+        default:
+            break;
         }
         break;
     }
@@ -137,14 +193,11 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
         case DisplayState::ChangeAlarm1Hour:
         case DisplayState::ChangeAlarm2Hour:
-            blink = false;
-            alarmTimeToModify.addHours(1);
-            break;
-
+        case DisplayState::ChangeClockHour:
         case DisplayState::ChangeAlarm1Minute:
         case DisplayState::ChangeAlarm2Minute:
-            blink = false;
-            alarmTimeToModify.addMinutes(5);
+        case DisplayState::ChangeClockMinute:
+            incrementNumber();
             break;
 
         case DisplayState::Standby:
@@ -165,26 +218,33 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         {
         case DisplayState::ChangeAlarm1Hour:
         case DisplayState::ChangeAlarm2Hour:
-            // ToDo: start timer which increase alarm hour repeately
-            break;
-
         case DisplayState::ChangeAlarm1Minute:
         case DisplayState::ChangeAlarm2Minute:
-            // ToDo: start timer which increase alarm minute repeately
+        case DisplayState::ChangeClockHour:
+        case DisplayState::ChangeClockMinute:
+            setTimeoutTimerPeriod(250.0_ms);
+            resetTimeoutTimer();
 
-        case DisplayState::Clock:
-        case DisplayState::ClockWithAlarmLeds:
-            // ToDo: go to standby
         default:
             break;
         }
         break;
     }
-    case util::Button::Action::StopLongPress:
-        // ToDo: stop timer
 
-    default:
+    case util::Button::Action::SuperLongPress:
+    {
+        if (displayState == DisplayState::Clock || displayState == DisplayState::ClockWithAlarmLeds)
+        {
+            blink = true;
+            timeToModify = rtc.getClockTime();
+            timeToModify.second = 0;
+            displayState = DisplayState::ChangeClockHour;
+        }
         break;
+    }
+
+    case util::Button::Action::StopLongPress:
+        stopTimeoutTimer();
     }
 }
 
@@ -214,9 +274,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             // ToDo: abort test
             [[fallthrough]];
         default:
-            // return to clock
-            resetTimeoutTimer();
-            displayState = DisplayState::ClockWithAlarmLeds;
+            goToDefaultState();
             break;
         }
         break;
@@ -259,4 +317,31 @@ void StateMachine::buttonCCTPlusCallback(util::Button::Action action)
 void StateMachine::buttonCCTMinusCallback(util::Button::Action action)
 {
     // ToDo: decrement LED color temperature
+}
+
+//-----------------------------------------------------------------
+void StateMachine::incrementNumber()
+{
+    blink = false;
+
+    switch (displayState)
+    {
+    case DisplayState::ChangeAlarm1Hour:
+    case DisplayState::ChangeAlarm2Hour:
+    case DisplayState::ChangeClockHour:
+        timeToModify.addHours(1);
+        break;
+
+    case DisplayState::ChangeAlarm1Minute:
+    case DisplayState::ChangeAlarm2Minute:
+        timeToModify.addMinutes(5);
+        break;
+
+    case DisplayState::ChangeClockMinute:
+        timeToModify.addMinutes(1);
+        break;
+
+    default:
+        break;
+    }
 }

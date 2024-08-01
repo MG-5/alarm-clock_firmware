@@ -9,15 +9,22 @@ class StatusLeds : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
     StatusLeds(TIM_HandleTypeDef *ledTimerHandle, uint32_t ledAlarm1Channel,
-               uint32_t ledAlarm2Channel, uint32_t ledRedChannel, uint32_t ledGreenChannel)
+               uint32_t ledAlarm2Channel, uint32_t ledRedChannel, uint32_t ledGreenChannel,
+               TimerCallbackFunction_t timeoutCallback)
         : TaskWithMemberFunctionBase("statusLedTask", 128, osPriorityLow2),
           ledTimerHandle(ledTimerHandle),     //
           ledAlarm1Channel(ledAlarm1Channel), //
           ledAlarm2Channel(ledAlarm2Channel), //
           ledRedChannel(ledRedChannel),       //
-          ledGreenChannel(ledGreenChannel)    //
+          ledGreenChannel(ledGreenChannel),   //
+          timeoutCallback(timeoutCallback)
     {
         SafeAssert(this->ledTimerHandle != nullptr);
+    }
+
+    void handleTimeoutTimer()
+    {
+        ledRedGreen.turnOff();
     }
 
 protected:
@@ -45,6 +52,10 @@ private:
     uint32_t ledRedChannel = 0;
     uint32_t ledGreenChannel = 0;
 
+    TimerCallbackFunction_t timeoutCallback = nullptr;
+    TimerHandle_t timeoutTimer{
+        xTimerCreate("timeoutTimer", toOsTicks(2.0_s), pdFALSE, nullptr, timeoutCallback)};
+
 public:
     // APB1 for timers: 80MHz -> 1024 PWM steps and clock divison by 4 -> 19.5kHz PWM frequency
     static constexpr auto PwmSteps = 1024;
@@ -71,5 +82,19 @@ public:
         ledAlarm1.turnOff();
         ledAlarm2.turnOff();
         ledRedGreen.turnOff();
+    }
+
+    void signalSuccess()
+    {
+        ledRedGreen.setColor(util::pwm_led::DualLedColor::Green);
+        xTimerChangePeriod(timeoutTimer, toOsTicks(1.0_s), 0);
+        xTimerReset(timeoutTimer, 0);
+    }
+
+    void signalError()
+    {
+        ledRedGreen.setColor(util::pwm_led::DualLedColor::Red);
+        xTimerChangePeriod(timeoutTimer, toOsTicks(5.0_s), 0);
+        xTimerReset(timeoutTimer, 0);
     }
 };

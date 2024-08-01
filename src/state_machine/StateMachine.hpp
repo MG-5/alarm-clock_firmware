@@ -36,6 +36,8 @@ public:
         ChangeAlarm1Minute,
         ChangeAlarm2Hour,
         ChangeAlarm2Minute,
+        ChangeClockHour,
+        ChangeClockMinute,
         DisplayAlarmStatus,
         LedBrightness,
         LedCCT,
@@ -58,14 +60,7 @@ public:
         Both
     };
 
-    void handleTimeoutTimer()
-    {
-        if (displayState == DisplayState::ClockWithAlarmLeds)
-        {
-            displayState = DisplayState::Clock;
-            notify(1, util::wrappers::NotifyAction::SetBits);
-        }
-    }
+    void handleTimeoutTimer();
 
 protected:
     void taskMain(void *) override;
@@ -81,15 +76,17 @@ private:
     AlarmMode alarmMode = AlarmMode::Both;
     bool blink = true;
 
-    Time alarmTimeToModify;
+    Time timeToModify;
 
     void displayLedInitialization();
     void waitForRtc();
 
-    void handleAlarmHourChange(StatusLeds::SingleLed &ledAlarm);
-    void handleAlarmMinuteChange(StatusLeds::SingleLed &ledAlarm);
-
+    void showHourChanging();
+    void showMinuteChanging();
     void showCurrentAlarmMode();
+
+    void signalResult(bool success);
+    void goToDefaultState();
 
     void assignButtonCallbacks();
 
@@ -101,9 +98,13 @@ private:
     void buttonCCTPlusCallback(util::Button::Action action);
     void buttonCCTMinusCallback(util::Button::Action action);
 
+    void incrementNumber();
+
     TimerCallbackFunction_t timeoutCallback = nullptr;
+
+    // with enabled auto reload
     TimerHandle_t timeoutTimer{
-        xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdFALSE, nullptr, timeoutCallback)};
+        xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdTRUE, nullptr, timeoutCallback)};
 
     void setTimeoutTimerPeriod(units::si::Time period)
     {

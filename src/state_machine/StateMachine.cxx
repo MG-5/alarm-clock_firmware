@@ -10,7 +10,8 @@ void StateMachine::taskMain(void *)
     while (true)
     {
         display.gridDataArray.fill(Display::GridData{});
-        statusLeds.turnAllOff();
+        statusLeds.ledAlarm1.turnOff();
+        statusLeds.ledAlarm2.turnOff();
 
         // ToDo: replace it with reading general error state
         if (!rtc.isRtcOnline())
@@ -57,25 +58,29 @@ void StateMachine::taskMain(void *)
             break;
 
         case DisplayState::ChangeAlarm1Hour:
-            handleAlarmHourChange(statusLeds.ledAlarm1);
+            showHourChanging();
+            statusLeds.ledAlarm1.turnOn();
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm2Hour:
-            handleAlarmHourChange(statusLeds.ledAlarm2);
+            showHourChanging();
+            statusLeds.ledAlarm2.turnOn();
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm1Minute:
-            handleAlarmMinuteChange(statusLeds.ledAlarm1);
+            showMinuteChanging();
+            statusLeds.ledAlarm1.turnOn();
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
         case DisplayState::ChangeAlarm2Minute:
-            handleAlarmMinuteChange(statusLeds.ledAlarm2);
+            showMinuteChanging();
+            statusLeds.ledAlarm2.turnOn();
             blink = !blink;
             delayUntilEventOrTimeout(500.0_ms);
             break;
@@ -83,7 +88,19 @@ void StateMachine::taskMain(void *)
         case DisplayState::DisplayAlarmStatus:
             showCurrentAlarmMode();
             if (delayUntilEventOrTimeout(3.0_s))
-                displayState = DisplayState::ClockWithAlarmLeds;
+                goToDefaultState();
+            break;
+
+        case DisplayState::ChangeClockHour:
+            showHourChanging();
+            blink = !blink;
+            delayUntilEventOrTimeout(500.0_ms);
+            break;
+
+        case DisplayState::ChangeClockMinute:
+            showMinuteChanging();
+            blink = !blink;
+            delayUntilEventOrTimeout(500.0_ms);
             break;
 
         default:
@@ -116,11 +133,10 @@ void StateMachine::waitForRtc()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::handleAlarmHourChange(StatusLeds::SingleLed &ledAlarm)
+void StateMachine::showHourChanging()
 {
-    display.setClock(alarmTimeToModify);
+    display.setClock(timeToModify);
     display.showClock(true);
-    ledAlarm.turnOn();
     if (blink)
     {
         // replace numbers with underscore
@@ -129,11 +145,10 @@ void StateMachine::handleAlarmHourChange(StatusLeds::SingleLed &ledAlarm)
 }
 
 //-----------------------------------------------------------------
-void StateMachine::handleAlarmMinuteChange(StatusLeds::SingleLed &ledAlarm)
+void StateMachine::showMinuteChanging()
 {
-    display.setClock(alarmTimeToModify);
+    display.setClock(timeToModify);
     display.showClock(true);
-    ledAlarm.turnOn();
     if (blink)
     {
         // replace numbers with underscore
@@ -173,6 +188,20 @@ void StateMachine::showCurrentAlarmMode()
         statusLeds.ledAlarm2.turnOn();
         break;
     }
+}
+
+//-----------------------------------------------------------------
+void StateMachine::signalResult(bool success)
+{
+    success ? statusLeds.signalSuccess() : statusLeds.signalError();
+}
+
+//-----------------------------------------------------------------
+void StateMachine::goToDefaultState()
+{
+    displayState = DisplayState::ClockWithAlarmLeds;
+    setTimeoutTimerPeriod(4.0_s);
+    resetTimeoutTimer();
 }
 
 //-----------------------------------------------------------------

@@ -8,7 +8,7 @@ class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 public:
     RealTimeClock(I2cAccessor &i2cAccessor)
         : TaskWithMemberFunctionBase("rtcTask", 256, osPriorityBelowNormal5), //
-          i2cAccessor(i2cAccessor){};
+          i2cAccessor(i2cAccessor) {};
 
     bool isRtcOnline();
     bool wasRtcOnlineOnce();
@@ -17,8 +17,9 @@ public:
     Time getAlarmTime1();
     Time getAlarmTime2();
 
-    void writeAlarmTime1(Time &newAlarmTime);
-    void writeAlarmTime2(Time &newAlarmTime);
+    bool writeAlarmTime1(Time &newAlarmTime);
+    bool writeAlarmTime2(Time &newAlarmTime);
+    bool writeClockTime(Time &newClockTime);
 
 protected:
     [[noreturn]] void taskMain(void *) override;

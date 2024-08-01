@@ -28,7 +28,8 @@ public:
 
     static void multiplexingTimerUpdate();
     static void pwmTimerCompare();
-    static void timeoutCallback(TimerHandle_t timer);
+    static void statusLedsTimeoutCallback(TimerHandle_t timer);
+    static void stateMachineTimeoutCallback(TimerHandle_t timer);
 
 private:
     static inline Application *instance{nullptr};
@@ -38,13 +39,13 @@ private:
     DisplayDimming dimming{MultiplexingPwmTimer, PwmTimChannel};
     Display display{dimming};
 
-    StatusLeds statusLeds{LedPwmTimer, LedAlarm1Channel, LedAlarm2Channel, LedRedChannel,
-                          LedGreenChannel};
+    StatusLeds statusLeds{LedPwmTimer,   LedAlarm1Channel, LedAlarm2Channel,
+                          LedRedChannel, LedGreenChannel,  statusLedsTimeoutCallback};
 
     Buttons buttons{};
 
     I2cAccessor i2cBusAccessor{RtcBus};
     RealTimeClock rtc{i2cBusAccessor};
 
-    StateMachine stateMachine{display, statusLeds, buttons, rtc, &timeoutCallback};
+    StateMachine stateMachine{display, statusLeds, buttons, rtc, &stateMachineTimeoutCallback};
 };

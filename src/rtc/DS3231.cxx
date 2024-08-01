@@ -42,7 +42,7 @@ std::optional<Date> DS3231::getDate()
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setTime(const Time &newTime)
+bool DS3231::setTime(const Time &newTime)
 {
     constexpr auto NumberOfBytes = 3;
     uint8_t dataToWrite[NumberOfBytes] = {decToBcd(newTime.second), //
@@ -50,51 +50,59 @@ void DS3231::setTime(const Time &newTime)
                                           decToBcd(newTime.hour)};
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeToRegister(Register::Seconds, dataToWrite, NumberOfBytes);
+    bool wasSuccessful = accessor.writeToRegister(Register::Seconds, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setHour(uint8_t hour)
+bool DS3231::setHour(uint8_t hour)
 {
     if (hour >= 24)
-        return;
+        return false;
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeByteToRegister(Register::Hour, decToBcd(hour));
+    bool wasSuccessful = accessor.writeByteToRegister(Register::Hour, decToBcd(hour));
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setDate(uint8_t day, uint8_t month, uint16_t year)
+bool DS3231::setDate(uint8_t day, uint8_t month, uint16_t year)
 {
     bool areParametersInRange = ((day >= 1) && (day <= 31)) && ((month >= 1) && (month <= 12)) &&
                                 ((year >= 2000) && (year < 2100));
 
     if (!areParametersInRange)
-        return;
+        return false;
 
     constexpr auto NumberOfBytes = 3;
     uint8_t dataToWrite[NumberOfBytes] = {decToBcd(day), decToBcd(month), decToBcd(year - 2000)};
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeToRegister(Register::Date, dataToWrite, NumberOfBytes);
+    bool wasSuccessful = accessor.writeToRegister(Register::Date, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setDOW(uint8_t dow)
+bool DS3231::setDOW(uint8_t dow)
 {
     if (dow >= 8)
-        return;
+        return false;
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeByteToRegister(Register::DayOfWeek, dow);
+    bool wasSuccessful = accessor.writeByteToRegister(Register::DayOfWeek, dow);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm1(const Time &newAlarmTime)
+bool DS3231::setAlarm1(const Time &newAlarmTime)
 {
     constexpr auto NumberOfBytes = 4;
     uint8_t dataToWrite[NumberOfBytes] = {
@@ -105,8 +113,11 @@ void DS3231::setAlarm1(const Time &newAlarmTime)
     };
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeToRegister(Register::Alarm1_Seconds, dataToWrite, NumberOfBytes);
+    bool wasSuccessful =
+        accessor.writeToRegister(Register::Alarm1_Seconds, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -133,19 +144,19 @@ std::optional<bool> DS3231::isAlarm1Triggered()
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::clearAlarm1Flag()
+bool DS3231::clearAlarm1Flag()
 {
-    clearAlarmFlag(Alarm::Alarm1);
+    return clearAlarmFlag(Alarm::Alarm1);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm1Interrupt(bool enable)
+bool DS3231::setAlarm1Interrupt(bool enable)
 {
-    setAlarmInterrupt(enable, Alarm::Alarm1);
+    return setAlarmInterrupt(enable, Alarm::Alarm1);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm2(const Time &newAlarmTime)
+bool DS3231::setAlarm2(const Time &newAlarmTime)
 {
     constexpr auto NumberOfBytes = 3;
     uint8_t dataToWrite[NumberOfBytes] = {
@@ -155,8 +166,11 @@ void DS3231::setAlarm2(const Time &newAlarmTime)
     };
 
     accessor.beginTransaction(SlaveAddress);
-    accessor.writeToRegister(Register::Alarm2_Minutes, dataToWrite, NumberOfBytes);
+    bool wasSuccessful =
+        accessor.writeToRegister(Register::Alarm2_Minutes, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -183,15 +197,15 @@ std::optional<bool> DS3231::isAlarm2Triggered()
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::clearAlarm2Flag()
+bool DS3231::clearAlarm2Flag()
 {
-    clearAlarmFlag(Alarm::Alarm2);
+    return clearAlarmFlag(Alarm::Alarm2);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarm2Interrupt(bool enable)
+bool DS3231::setAlarm2Interrupt(bool enable)
 {
-    setAlarmInterrupt(enable, Alarm::Alarm2);
+    return setAlarmInterrupt(enable, Alarm::Alarm2);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -212,23 +226,23 @@ std::optional<bool> DS3231::isAlarmTriggered(Alarm alarm)
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::clearAlarmFlag(Alarm alarm)
+bool DS3231::clearAlarmFlag(Alarm alarm)
 {
     const auto BitPosition = alarm == Alarm::Alarm1 ? status_bits::A1F : status_bits::A2F;
-    updateRegister(Register::Control_Status, BitPosition, false);
+    return updateRegister(Register::Control_Status, BitPosition, false);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setAlarmInterrupt(bool enable, Alarm alarm)
+bool DS3231::setAlarmInterrupt(bool enable, Alarm alarm)
 {
     const auto BitPosition = alarm == Alarm::Alarm1 ? control_bits::A1IE : control_bits::A2IE;
-    updateRegister(Register::Control, BitPosition, enable);
+    return updateRegister(Register::Control, BitPosition, enable);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::forceTemperatureUpdate()
+bool DS3231::forceTemperatureUpdate()
 {
-    updateRegister(Register::Control, control_bits::Conv, true);
+    return updateRegister(Register::Control, control_bits::Conv, true);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -252,35 +266,37 @@ std::optional<float> DS3231::getTemperature()
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::enable32KHz(bool enable)
+bool DS3231::enable32KHz(bool enable)
 {
-    updateRegister(Register::Control_Status, status_bits::EN32kHz, enable);
+    return updateRegister(Register::Control_Status, status_bits::EN32kHz, enable);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setInterruptOutput(bool enable)
+bool DS3231::setInterruptOutput(bool enable)
 {
-    updateRegister(Register::Control, control_bits::INTCN, enable);
+    return updateRegister(Register::Control, control_bits::INTCN, enable);
 }
 
 //--------------------------------------------------------------------------------------------------
-void DS3231::setSQWRate(SqwRate rate)
+bool DS3231::setSQWRate(SqwRate rate)
 {
     uint8_t controlByte = 0;
 
     accessor.beginTransaction(SlaveAddress);
-    bool transactionResult = accessor.readByteFromRegister(Register::Control, controlByte);
+    bool wasSuccessful = accessor.readByteFromRegister(Register::Control, controlByte);
 
-    if (!transactionResult)
+    if (!wasSuccessful)
     {
         accessor.endTransaction();
-        return;
+        return false;
     }
 
     controlByte &= ~(control_bits::RateSelectMask << control_bits::RateSelectPos);
     controlByte |= (static_cast<uint8_t>(rate) << control_bits::RateSelectPos);
-    accessor.writeByteToRegister(Register::Control, controlByte);
+    wasSuccessful = accessor.writeByteToRegister(Register::Control, controlByte);
     accessor.endTransaction();
+
+    return wasSuccessful;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -301,17 +317,17 @@ bool DS3231::updateRegister(Register registerName, uint8_t bitPos, bool bitState
     uint8_t registerContent = 0;
 
     accessor.beginTransaction(SlaveAddress);
-    bool transactionResult = accessor.readByteFromRegister(registerName, registerContent);
+    bool wasSuccessful = accessor.readByteFromRegister(registerName, registerContent);
 
-    if (!transactionResult)
+    if (!wasSuccessful)
     {
         accessor.endTransaction();
         return false;
     }
 
     bitState ? registerContent |= (1 << bitPos) : registerContent &= ~(1 << bitPos);
-    transactionResult = accessor.writeByteToRegister(registerName, registerContent);
+    wasSuccessful = accessor.writeByteToRegister(registerName, registerContent);
     accessor.endTransaction();
 
-    return transactionResult;
+    return wasSuccessful;
 }
