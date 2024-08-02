@@ -1,16 +1,15 @@
 #pragma once
 
 #include "tim.h"
-#include "util/PwmLed.hpp"
+#include "util/led/PwmLed.hpp"
 #include "wrappers/Task.hpp"
-#include <bit>
 
 class StatusLeds : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StatusLeds(TIM_HandleTypeDef *ledTimerHandle, uint32_t ledAlarm1Channel,
-               uint32_t ledAlarm2Channel, uint32_t ledRedChannel, uint32_t ledGreenChannel,
-               TimerCallbackFunction_t timeoutCallback)
+    StatusLeds(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &ledAlarm1Channel,
+               const uint32_t &ledAlarm2Channel, const uint32_t &ledRedChannel,
+               const uint32_t &ledGreenChannel, TimerCallbackFunction_t timeoutCallback)
         : TaskWithMemberFunctionBase("statusLedTask", 128, osPriorityLow2),
           ledTimerHandle(ledTimerHandle),     //
           ledAlarm1Channel(ledAlarm1Channel), //
@@ -34,6 +33,10 @@ protected:
         ledAlarm2.startPwmTimer();
         ledRedGreen.startPwmTimer();
 
+        ledAlarm1.setBrightness(25);
+        ledAlarm2.setBrightness(25);
+        ledRedGreen.setBrightness(25);
+
         auto lastWakeTime = xTaskGetTickCount();
 
         while (true)
@@ -47,10 +50,10 @@ protected:
 
 private:
     TIM_HandleTypeDef *ledTimerHandle = nullptr;
-    uint32_t ledAlarm1Channel = 0;
-    uint32_t ledAlarm2Channel = 0;
-    uint32_t ledRedChannel = 0;
-    uint32_t ledGreenChannel = 0;
+    const uint32_t &ledAlarm1Channel;
+    const uint32_t &ledAlarm2Channel;
+    const uint32_t &ledRedChannel;
+    const uint32_t &ledGreenChannel;
 
     TimerCallbackFunction_t timeoutCallback = nullptr;
     TimerHandle_t timeoutTimer{
@@ -59,16 +62,20 @@ private:
 public:
     // APB1 for timers: 80MHz -> 1024 PWM steps and clock divison by 4 -> 19.5kHz PWM frequency
     static constexpr auto PwmSteps = 1024;
-    static constexpr auto NumberOfResolutionBits = std::bit_width<size_t>(PwmSteps - 1);
+    static constexpr auto ResolutionBits = std::bit_width<size_t>(PwmSteps - 1);
+    static constexpr auto GammaCorrection = util::led::pwm::GammaCorrection<ResolutionBits>{};
 
-    using SingleLed = util::pwm_led::SingleLed<NumberOfResolutionBits>;
+    using SingleLed = util::led::pwm::SingleLed<ResolutionBits>;
+    using DualLed = util::led::pwm::DualLed<ResolutionBits>;
 
-    SingleLed ledAlarm1{util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm1Channel}};
-    SingleLed ledAlarm2{util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledAlarm2Channel}};
+    SingleLed ledAlarm1{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm1Channel},
+                        GammaCorrection};
+    SingleLed ledAlarm2{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm2Channel},
+                        GammaCorrection};
 
-    util::pwm_led::DualLed<NumberOfResolutionBits> ledRedGreen{
-        util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledRedChannel},
-        util::PwmOutput<NumberOfResolutionBits>{ledTimerHandle, ledGreenChannel}};
+    DualLed ledRedGreen{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledRedChannel},
+                        util::PwmOutput<ResolutionBits>{ledTimerHandle, ledGreenChannel},
+                        GammaCorrection};
 
     void turnAllOn()
     {
@@ -86,14 +93,14 @@ public:
 
     void signalSuccess()
     {
-        ledRedGreen.setColor(util::pwm_led::DualLedColor::Green);
+        ledRedGreen.setColor(util::led::pwm::DualLedColor::Green);
         xTimerChangePeriod(timeoutTimer, toOsTicks(1.0_s), 0);
         xTimerReset(timeoutTimer, 0);
     }
 
     void signalError()
     {
-        ledRedGreen.setColor(util::pwm_led::DualLedColor::Red);
+        ledRedGreen.setColor(util::led::pwm::DualLedColor::Red);
         xTimerChangePeriod(timeoutTimer, toOsTicks(5.0_s), 0);
         xTimerReset(timeoutTimer, 0);
     }

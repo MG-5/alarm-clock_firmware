@@ -15,7 +15,7 @@ void StateMachine::taskMain(void *)
 
         // ToDo: replace it with reading general error state
         if (!rtc.isRtcOnline())
-            statusLeds.ledRedGreen.setColor(util::pwm_led::DualLedColor::Red);
+            statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Red);
 
         switch (displayState)
         {
@@ -127,7 +127,7 @@ void StateMachine::displayLedInitialization()
 //-----------------------------------------------------------------
 void StateMachine::waitForRtc()
 {
-    statusLeds.ledRedGreen.setColorBlinking(util::pwm_led::DualLedColor::Red, 2.0_Hz);
+    statusLeds.ledRedGreen.setColorBlinking(util::led::pwm::DualLedColor::Red, 2.0_Hz);
     syncEventGroup.waitBits(sync::RtcHasRespondedOnce, pdFALSE, pdFALSE, portMAX_DELAY);
     statusLeds.ledRedGreen.turnOff();
 }

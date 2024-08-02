@@ -42,7 +42,6 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
-add_subdirectory(src/LED/gcem)
 add_subdirectory(src/rtc/Time)
 add_subdirectory(src/util)
 

@@ -6,10 +6,6 @@
 	path = core
 	url = git@github.com:MG-5/core
 	branch = main
-[submodule "src/LED/gcem"]
-	path = src/LED/gcem
-	url = git@github.com:kthohr/gcem.git
-	branch = master
 [submodule "src/rtc/Time"]
 	path = src/rtc/Time
 	url = https://github.com/MG-5/Time
