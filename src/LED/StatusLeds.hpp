@@ -7,15 +7,13 @@
 class StatusLeds : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StatusLeds(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &ledAlarm1Channel,
-               const uint32_t &ledAlarm2Channel, const uint32_t &ledRedChannel,
-               const uint32_t &ledGreenChannel, TimerCallbackFunction_t timeoutCallback)
-        : TaskWithMemberFunctionBase("statusLedTask", 128, osPriorityLow2),
-          ledTimerHandle(ledTimerHandle),     //
-          ledAlarm1Channel(ledAlarm1Channel), //
-          ledAlarm2Channel(ledAlarm2Channel), //
-          ledRedChannel(ledRedChannel),       //
-          ledGreenChannel(ledGreenChannel),   //
+    StatusLeds(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &ledAlarm1Channel, const uint32_t &ledAlarm2Channel,
+               const uint32_t &ledRedChannel, const uint32_t &ledGreenChannel, TimerCallbackFunction_t timeoutCallback)
+        : TaskWithMemberFunctionBase("statusLedTask", 128, osPriorityLow2), ledTimerHandle(ledTimerHandle), //
+          ledAlarm1Channel(ledAlarm1Channel),                                                               //
+          ledAlarm2Channel(ledAlarm2Channel),                                                               //
+          ledRedChannel(ledRedChannel),                                                                     //
+          ledGreenChannel(ledGreenChannel),                                                                 //
           timeoutCallback(timeoutCallback)
     {
         SafeAssert(this->ledTimerHandle != nullptr);
@@ -56,8 +54,7 @@ private:
     const uint32_t &ledGreenChannel;
 
     TimerCallbackFunction_t timeoutCallback = nullptr;
-    TimerHandle_t timeoutTimer{
-        xTimerCreate("timeoutTimer", toOsTicks(2.0_s), pdFALSE, nullptr, timeoutCallback)};
+    TimerHandle_t timeoutTimer{xTimerCreate("timeoutTimer", toOsTicks(2.0_s), pdFALSE, nullptr, timeoutCallback)};
 
 public:
     // APB1 for timers: 80MHz -> 1024 PWM steps and clock divison by 4 -> 19.5kHz PWM frequency
@@ -68,14 +65,11 @@ public:
     using SingleLed = util::led::pwm::SingleLed<ResolutionBits>;
     using DualLed = util::led::pwm::DualLed<ResolutionBits>;
 
-    SingleLed ledAlarm1{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm1Channel},
-                        GammaCorrection};
-    SingleLed ledAlarm2{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm2Channel},
-                        GammaCorrection};
+    SingleLed ledAlarm1{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm1Channel}, GammaCorrection};
+    SingleLed ledAlarm2{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm2Channel}, GammaCorrection};
 
     DualLed ledRedGreen{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledRedChannel},
-                        util::PwmOutput<ResolutionBits>{ledTimerHandle, ledGreenChannel},
-                        GammaCorrection};
+                        util::PwmOutput<ResolutionBits>{ledTimerHandle, ledGreenChannel}, GammaCorrection};
 
     void turnAllOn()
     {

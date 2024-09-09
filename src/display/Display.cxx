@@ -92,8 +92,7 @@ void Display::strobePeriod()
 }
 
 //-----------------------------------------------------------------
-void Display::sendSegmentBits(uint32_t bits, bool forceLatch, bool enableDots, bool enableUpperBar,
-                              bool enableLowerBar)
+void Display::sendSegmentBits(uint32_t bits, bool forceLatch, bool enableDots, bool enableUpperBar, bool enableLowerBar)
 {
     bits <<= 3; // shift bits to make place for N (upperBar), O_DP (dots) and P_MIN_SEC (lowerBar)
     bits |= ((enableUpperBar & 1) << 2) | ((enableDots & 1) << 1) | (enableLowerBar & 1);
@@ -114,8 +113,10 @@ void Display::multiplexingInterrupt()
     if (++gridIndex >= NumberOfGrids)
         gridIndex = 0;
 
-    sendSegmentBits(gridDataArray[gridIndex].segments, false, gridDataArray[gridIndex].enableDots,
-                    gridDataArray[gridIndex].enableUpperBar,
+    sendSegmentBits(gridDataArray[gridIndex].segments,       //
+                    false,                                   //
+                    gridDataArray[gridIndex].enableDots,     //
+                    gridDataArray[gridIndex].enableUpperBar, //
                     gridDataArray[gridIndex].enableLowerBar);
     disableAllGrids();
     strobePeriod();

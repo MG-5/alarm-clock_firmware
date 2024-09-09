@@ -103,8 +103,7 @@ private:
     TimerCallbackFunction_t timeoutCallback = nullptr;
 
     // with enabled auto reload
-    TimerHandle_t timeoutTimer{
-        xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdTRUE, nullptr, timeoutCallback)};
+    TimerHandle_t timeoutTimer{xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdTRUE, nullptr, timeoutCallback)};
 
     void setTimeoutTimerPeriod(units::si::Time period)
     {
