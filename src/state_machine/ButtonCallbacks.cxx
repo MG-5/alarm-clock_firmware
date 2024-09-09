@@ -297,7 +297,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             return;
         }
 
-        // ToDo: toggle LED strip
+        ledStrip.toggleState();
         break;
     }
     default:
@@ -308,13 +308,15 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
 //-----------------------------------------------------------------
 void StateMachine::buttonBrightnessPlusCallback(util::Button::Action action)
 {
-    // ToDo: increment LED brightness or alarm time hour/minute
+    ledStrip.incrementBrightness();
+    // ToDo: alarm time hour/minute
 }
 
 //-----------------------------------------------------------------
 void StateMachine::buttonBrightnessMinusCallback(util::Button::Action action)
 {
-    // ToDo: decrement LED brightness or alarm time hour/minute
+    ledStrip.decrementBrightness();
+    // ToDo: alarm time hour/minute
 }
 
 //-----------------------------------------------------------------
@@ -349,6 +351,33 @@ void StateMachine::incrementNumber()
 
     case DisplayState::ChangeClockMinute:
         timeToModify.addMinutes(1);
+        break;
+
+    default:
+        break;
+    }
+}
+
+//-----------------------------------------------------------------
+void StateMachine::decrementNumber()
+{
+    blink = false;
+
+    switch (displayState)
+    {
+    case DisplayState::ChangeAlarm1Hour:
+    case DisplayState::ChangeAlarm2Hour:
+    case DisplayState::ChangeClockHour:
+        timeToModify.subHours(1);
+        break;
+
+    case DisplayState::ChangeAlarm1Minute:
+    case DisplayState::ChangeAlarm2Minute:
+        timeToModify.subMinutes(5);
+        break;
+
+    case DisplayState::ChangeClockMinute:
+        timeToModify.subMinutes(1);
         break;
 
     default:

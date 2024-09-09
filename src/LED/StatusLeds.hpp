@@ -27,10 +27,6 @@ public:
 protected:
     [[noreturn]] void taskMain(void *)
     {
-        ledAlarm1.startPwmTimer();
-        ledAlarm2.startPwmTimer();
-        ledRedGreen.startPwmTimer();
-
         ledAlarm1.setBrightness(25);
         ledAlarm2.setBrightness(25);
         ledRedGreen.setBrightness(25);

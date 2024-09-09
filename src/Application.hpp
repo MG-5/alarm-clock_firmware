@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LED/LedStrip.hpp"
+#include "LED/StatusLeds.hpp"
 #include "buttons/Buttons.hpp"
 #include "display/Display.hpp"
 #include "rtc/RealTimeClock.hpp"
@@ -13,11 +15,15 @@ public:
     static constexpr auto MultiplexingPwmTimer = &htim1;
     static constexpr auto PwmTimChannel = TIM_CHANNEL_1;
 
-    static constexpr auto LedPwmTimer = &htim2;
+    static constexpr auto StatusLedPwmTimer = &htim2;
     static constexpr auto LedAlarm1Channel = TIM_CHANNEL_1;
     static constexpr auto LedAlarm2Channel = TIM_CHANNEL_2;
     static constexpr auto LedRedChannel = TIM_CHANNEL_3;
     static constexpr auto LedGreenChannel = TIM_CHANNEL_4;
+
+    static constexpr auto LedStripPwmTimer = &htim15;
+    static constexpr auto WarmWhiteChannel = TIM_CHANNEL_1;
+    static constexpr auto ColdWhiteChannel = TIM_CHANNEL_2;
 
     static constexpr auto RtcBus = &hi2c1;
 
@@ -39,13 +45,14 @@ private:
     DisplayDimming dimming{MultiplexingPwmTimer, PwmTimChannel};
     Display display{dimming};
 
-    StatusLeds statusLeds{LedPwmTimer,   LedAlarm1Channel, LedAlarm2Channel,
-                          LedRedChannel, LedGreenChannel,  statusLedsTimeoutCallback};
+    StatusLeds statusLeds{StatusLedPwmTimer, LedAlarm1Channel, LedAlarm2Channel,
+                          LedRedChannel,     LedGreenChannel,  statusLedsTimeoutCallback};
+    LedStrip ledStrip{LedStripPwmTimer, WarmWhiteChannel, ColdWhiteChannel};
 
     Buttons buttons{};
 
     I2cAccessor i2cBusAccessor{RtcBus};
     RealTimeClock rtc{i2cBusAccessor};
 
-    StateMachine stateMachine{display, statusLeds, buttons, rtc, &stateMachineTimeoutCallback};
+    StateMachine stateMachine{display, statusLeds, ledStrip, buttons, rtc, &stateMachineTimeoutCallback};
 };

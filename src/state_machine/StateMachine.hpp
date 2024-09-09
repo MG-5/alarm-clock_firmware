@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LED/LedStrip.hpp"
 #include "LED/StatusLeds.hpp"
 #include "buttons/Buttons.hpp"
 #include "display/Display.hpp"
@@ -13,11 +14,12 @@
 class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(Display &display, StatusLeds &statusLeds, Buttons &buttons, RealTimeClock &rtc,
+    StateMachine(Display &display, StatusLeds &statusLeds, LedStrip &ledStrip, Buttons &buttons, RealTimeClock &rtc,
                  TimerCallbackFunction_t timeoutCallback)
         : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityNormal4), //
           display(display),                                                       //
           statusLeds(statusLeds),                                                 //
+          ledStrip(ledStrip),                                                     //
           buttons(buttons),                                                       //
           rtc(rtc),                                                               //
           timeoutCallback(timeoutCallback)
@@ -68,6 +70,7 @@ protected:
 private:
     Display &display;
     StatusLeds &statusLeds;
+    LedStrip &ledStrip;
     Buttons &buttons;
     RealTimeClock &rtc;
 
@@ -99,6 +102,7 @@ private:
     void buttonCCTMinusCallback(util::Button::Action action);
 
     void incrementNumber();
+    void decrementNumber();
 
     TimerCallbackFunction_t timeoutCallback = nullptr;
 
