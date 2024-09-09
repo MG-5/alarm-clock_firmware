@@ -92,7 +92,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::Standby:
-            // ToDo: turn on system
+            display.enableDisplay();
+            goToDefaultState();
             break;
 
         default:
@@ -132,13 +133,14 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         {
             alarmState = AlarmState::Off;
             // ToDo: disable vibration
+            return;
         }
 
         switch (displayState)
         {
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            // ToDo: go to standby
+            displayState = DisplayState::Standby;
             break;
 
         default:
@@ -201,7 +203,8 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
             break;
 
         case DisplayState::Standby:
-            // ToDo: turn on system
+            display.enableDisplay();
+            goToDefaultState();
             break;
 
         default:
@@ -270,6 +273,11 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             // do nothing
             break;
 
+        case DisplayState::Standby:
+            display.enableDisplay();
+            goToDefaultState();
+            break;
+
         case DisplayState::Test:
             // ToDo: abort test
             [[fallthrough]];
@@ -277,6 +285,8 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             goToDefaultState();
             break;
         }
+
+        notify(1, util::wrappers::NotifyAction::SetBits);
         break;
     }
     case util::Button::Action::LongPress:

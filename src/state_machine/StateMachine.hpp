@@ -128,8 +128,9 @@ private:
 
     /// block task for specified time but can be unblocked by external event e.g. button press
     /// @return true if timeout is occurred
-    bool delayUntilEventOrTimeout(units::si::Time blockTime)
+    bool delayUntilEventOrTimeout(units::si::Time blockTime, bool blockIndefinitely = false)
     {
-        return notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0, toOsTicks(blockTime)) == 0;
+        return notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0,
+                          blockIndefinitely ? portMAX_DELAY : toOsTicks(blockTime)) == 0;
     }
 };

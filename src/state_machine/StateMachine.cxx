@@ -21,8 +21,7 @@ void StateMachine::taskMain(void *)
         {
         case DisplayState::Standby:
             display.disableDisplay();
-            // ToDo: implement correct behavior
-            vTaskDelay(portMAX_DELAY);
+            delayUntilEventOrTimeout(0.0_s, true);
             break;
 
         case DisplayState::Clock:
