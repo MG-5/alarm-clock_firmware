@@ -102,12 +102,14 @@ void StateMachine::taskMain(void *)
 
         case DisplayState::LedBrightness:
             showCurrentBrightness();
-            delayUntilEventOrTimeout(4.0_s);
+            if (delayUntilEventOrTimeout(4.0_s))
+                restorePreviousState();
             break;
 
         case DisplayState::LedCCT:
             showCurrentCCT();
-            delayUntilEventOrTimeout(4.0_s);
+            if (delayUntilEventOrTimeout(4.0_s))
+                restorePreviousState();
             break;
 
         default:
@@ -232,6 +234,7 @@ void StateMachine::updateDisplayState(DisplayState newState)
     if (displayState == DisplayState::Standby)
         display.disableDisplay();
 
+    stopTimeoutTimer();
     revokeDisplayDelay();
 }
 
