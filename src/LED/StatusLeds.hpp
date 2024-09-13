@@ -56,10 +56,11 @@ public:
     // APB1 for timers: 80MHz -> 1024 PWM steps and clock divison by 4 -> 19.5kHz PWM frequency
     static constexpr auto PwmSteps = 1024;
     static constexpr auto ResolutionBits = std::bit_width<size_t>(PwmSteps - 1);
-    static constexpr auto GammaCorrection = util::led::pwm::GammaCorrection<ResolutionBits>{};
+    using GammaCorrection_t = util::led::pwm::GammaCorrection<ResolutionBits>;
+    static constexpr GammaCorrection_t GammaCorrection{};
 
-    using SingleLed = util::led::pwm::SingleLed<ResolutionBits>;
-    using DualLed = util::led::pwm::DualLed<ResolutionBits>;
+    using SingleLed = util::led::pwm::SingleLed<ResolutionBits, GammaCorrection_t>;
+    using DualLed = util::led::pwm::DualLed<ResolutionBits, GammaCorrection_t>;
 
     SingleLed ledAlarm1{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm1Channel}, GammaCorrection};
     SingleLed ledAlarm2{util::PwmOutput<ResolutionBits>{ledTimerHandle, ledAlarm2Channel}, GammaCorrection};
