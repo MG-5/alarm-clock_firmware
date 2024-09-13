@@ -16,12 +16,12 @@ class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 public:
     StateMachine(Display &display, StatusLeds &statusLeds, LedStrip &ledStrip, Buttons &buttons, RealTimeClock &rtc,
                  TimerCallbackFunction_t timeoutCallback)
-        : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityNormal4), //
-          display(display),                                                       //
-          statusLeds(statusLeds),                                                 //
-          ledStrip(ledStrip),                                                     //
-          buttons(buttons),                                                       //
-          rtc(rtc),                                                               //
+        : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityBelowNormal4), //
+          display(display),                                                            //
+          statusLeds(statusLeds),                                                      //
+          ledStrip(ledStrip),                                                          //
+          buttons(buttons),                                                            //
+          rtc(rtc),                                                                    //
           timeoutCallback(timeoutCallback)
     {
         assignButtonCallbacks();
