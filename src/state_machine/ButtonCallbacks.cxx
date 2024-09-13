@@ -30,6 +30,11 @@ void StateMachine::handleTimeoutTimer()
         revokeDisplayDelay();
         break;
 
+    case DisplayState::LedBrightness:
+    case DisplayState::LedCCT:
+        restorePreviousState();
+        break;
+
     default: // as fallback
         stopTimeoutTimer();
         break;
@@ -301,6 +306,11 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
 void StateMachine::buttonBrightnessPlusCallback(util::Button::Action action)
 {
     ledStrip.incrementBrightness();
+    if (displayState != DisplayState::LedCCT || displayState != DisplayState::LedBrightness)
+        savePreviousState();
+
+    updateDisplayState(DisplayState::LedBrightness);
+    setTimeoutAndStart(4.0_s);
     // ToDo: alarm time hour/minute
 }
 
@@ -308,19 +318,35 @@ void StateMachine::buttonBrightnessPlusCallback(util::Button::Action action)
 void StateMachine::buttonBrightnessMinusCallback(util::Button::Action action)
 {
     ledStrip.decrementBrightness();
+    if (displayState != DisplayState::LedCCT || displayState != DisplayState::LedBrightness)
+        savePreviousState();
+
+    updateDisplayState(DisplayState::LedBrightness);
+    setTimeoutAndStart(4.0_s);
+
     // ToDo: alarm time hour/minute
 }
 
 //-----------------------------------------------------------------
 void StateMachine::buttonCCTPlusCallback(util::Button::Action action)
 {
-    // ToDo: increment LED color temperature
+    ledStrip.incrementColorTemperature();
+    if (displayState != DisplayState::LedCCT || displayState != DisplayState::LedBrightness)
+        savePreviousState();
+
+    updateDisplayState(DisplayState::LedCCT);
+    setTimeoutAndStart(4.0_s);
 }
 
 //-----------------------------------------------------------------
 void StateMachine::buttonCCTMinusCallback(util::Button::Action action)
 {
-    // ToDo: decrement LED color temperature
+    ledStrip.decrementColorTemperature();
+    if (displayState != DisplayState::LedCCT || displayState != DisplayState::LedBrightness)
+        savePreviousState();
+
+    updateDisplayState(DisplayState::LedCCT);
+    setTimeoutAndStart(4.0_s);
 }
 
 //-----------------------------------------------------------------

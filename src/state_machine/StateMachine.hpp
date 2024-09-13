@@ -75,6 +75,7 @@ private:
     RealTimeClock &rtc;
 
     DisplayState displayState = DisplayState::Clock;
+    DisplayState previousDisplayState = DisplayState::Standby;
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
     bool blink = true;
@@ -87,10 +88,14 @@ private:
     void showHourChanging();
     void showMinuteChanging();
     void showCurrentAlarmMode();
+    void showCurrentBrightness();
+    void showCurrentCCT();
 
     void updateDisplayState(DisplayState newState);
     void signalResult(bool success);
     void revokeDisplayDelay();
+    void savePreviousState();
+    void restorePreviousState();
     void goToDefaultState();
 
     void assignButtonCallbacks();

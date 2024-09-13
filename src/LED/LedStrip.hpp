@@ -12,7 +12,7 @@ class LedStrip : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
     LedStrip(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &warmWhiteChannel, const uint32_t &coldWhiteChannel)
-        : TaskWithMemberFunctionBase("ledstripTask", 128, osPriorityLow2), ledTimerHandle(ledTimerHandle), //
+        : TaskWithMemberFunctionBase("ledstripTask", 256, osPriorityLow2), ledTimerHandle(ledTimerHandle), //
           warmWhiteChannel(warmWhiteChannel),                                                              //
           coldWhiteChannel(coldWhiteChannel)                                                               //
     {
@@ -41,6 +41,32 @@ public:
             globalBrightness -= 5;
 
         updateBrightness();
+    }
+
+    void incrementColorTemperature()
+    {
+        if (colorTemperature < ColdColorTemperature)
+            colorTemperature += ColorStep;
+
+        mapColorTemperatureToStrip();
+    }
+
+    void decrementColorTemperature()
+    {
+        if (colorTemperature > WarmColorTemperature)
+            colorTemperature -= ColorStep;
+
+        mapColorTemperatureToStrip();
+    }
+
+    uint8_t getGlobalBrightness() const
+    {
+        return globalBrightness;
+    }
+
+    units::si::Temperature getColorTemperature() const
+    {
+        return colorTemperature;
     }
 
 protected:
@@ -90,6 +116,9 @@ private:
             PwmSteps - util::mapValue(WarmColorTemperature.getMagnitude(), ColdColorTemperature.getMagnitude(), 0U,
                                       PwmSteps, colorTemperature.getMagnitude());
         coldWhiteBrightness = PwmSteps - warmWhiteBrightness;
+
+        warmWhiteLedStrip.setTargetPwmValue(warmWhiteBrightness);
+        coldWhiteLedStrip.setTargetPwmValue(coldWhiteBrightness);
     }
 
     void updateBrightness()

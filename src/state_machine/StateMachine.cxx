@@ -100,6 +100,16 @@ void StateMachine::taskMain(void *)
             delayUntilEventOrTimeout(500.0_ms);
             break;
 
+        case DisplayState::LedBrightness:
+            showCurrentBrightness();
+            delayUntilEventOrTimeout(4.0_s);
+            break;
+
+        case DisplayState::LedCCT:
+            showCurrentCCT();
+            delayUntilEventOrTimeout(4.0_s);
+            break;
+
         default:
             break;
         }
@@ -188,6 +198,30 @@ void StateMachine::showCurrentAlarmMode()
 }
 
 //-----------------------------------------------------------------
+void StateMachine::showCurrentBrightness()
+{
+    display.gridDataArray[2].segments = font.getGlyph('B');
+    display.gridDataArray[2].enableDots = true;
+
+    uint8_t brightness = ledStrip.getGlobalBrightness();
+    display.gridDataArray[3].segments = font.getGlyph('0' + brightness / 100);
+    display.gridDataArray[4].segments = font.getGlyph('0' + (brightness % 100) / 10);
+    display.gridDataArray[5].segments = font.getGlyph('0' + brightness % 10);
+}
+
+//-----------------------------------------------------------------
+void StateMachine::showCurrentCCT()
+{
+    const uint16_t Cct = ledStrip.getColorTemperature().getMagnitude<uint16_t>();
+
+    display.gridDataArray[1].segments = font.getGlyph('0' + Cct / 1000);
+    display.gridDataArray[2].segments = font.getGlyph('0' + (Cct % 1000) / 100);
+    display.gridDataArray[3].segments = font.getGlyph('0' + (Cct % 100) / 10);
+    display.gridDataArray[4].segments = font.getGlyph('0' + Cct % 10);
+    display.gridDataArray[5].segments = font.getGlyph('K');
+}
+
+//-----------------------------------------------------------------
 void StateMachine::updateDisplayState(DisplayState newState)
 {
     if (displayState == DisplayState::Standby)
@@ -218,6 +252,18 @@ void StateMachine::goToDefaultState()
 {
     updateDisplayState(DisplayState::ClockWithAlarmLeds);
     setTimeoutAndStart(4.0_s);
+}
+
+//-----------------------------------------------------------------
+void StateMachine::savePreviousState()
+{
+    previousDisplayState = displayState;
+}
+
+//-----------------------------------------------------------------
+void StateMachine::restorePreviousState()
+{
+    updateDisplayState(previousDisplayState);
 }
 
 //-----------------------------------------------------------------
