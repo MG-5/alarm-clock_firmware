@@ -88,7 +88,9 @@ private:
     void showMinuteChanging();
     void showCurrentAlarmMode();
 
+    void updateDisplayState(DisplayState newState);
     void signalResult(bool success);
+    void revokeDisplayDelay();
     void goToDefaultState();
 
     void assignButtonCallbacks();
@@ -108,6 +110,12 @@ private:
 
     // with enabled auto reload
     TimerHandle_t timeoutTimer{xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdTRUE, nullptr, timeoutCallback)};
+
+    void setTimeoutAndStart(units::si::Time period)
+    {
+        setTimeoutTimerPeriod(period);
+        resetTimeoutTimer();
+    }
 
     void setTimeoutTimerPeriod(units::si::Time period)
     {

@@ -33,10 +33,8 @@ void StateMachine::taskMain(void *)
         case DisplayState::ClockWithAlarmLeds:
             display.setClock(rtc.getClockTime());
             display.showClock();
-            statusLeds.ledAlarm1.setState(alarmMode == AlarmMode::Alarm1 ||
-                                          alarmMode == AlarmMode::Both);
-            statusLeds.ledAlarm2.setState(alarmMode == AlarmMode::Alarm2 ||
-                                          alarmMode == AlarmMode::Both);
+            statusLeds.ledAlarm1.setState(alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
+            statusLeds.ledAlarm2.setState(alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
             delayUntilEventOrTimeout(1.0_s);
             break;
 
@@ -190,30 +188,46 @@ void StateMachine::showCurrentAlarmMode()
 }
 
 //-----------------------------------------------------------------
+void StateMachine::updateDisplayState(DisplayState newState)
+{
+    if (displayState == DisplayState::Standby)
+        display.enableDisplay();
+
+    displayState = newState;
+
+    if (displayState == DisplayState::Standby)
+        display.disableDisplay();
+
+    revokeDisplayDelay();
+}
+
+//-----------------------------------------------------------------
 void StateMachine::signalResult(bool success)
 {
     success ? statusLeds.signalSuccess() : statusLeds.signalError();
 }
 
 //-----------------------------------------------------------------
+void StateMachine::revokeDisplayDelay()
+{
+    notify(1, util::wrappers::NotifyAction::SetBits);
+}
+
+//-----------------------------------------------------------------
 void StateMachine::goToDefaultState()
 {
-    displayState = DisplayState::ClockWithAlarmLeds;
-    setTimeoutTimerPeriod(4.0_s);
-    resetTimeoutTimer();
+    updateDisplayState(DisplayState::ClockWithAlarmLeds);
+    setTimeoutAndStart(4.0_s);
 }
 
 //-----------------------------------------------------------------
 void StateMachine::assignButtonCallbacks()
 {
-    buttons.left.setCallback(
-        std::bind(&StateMachine::buttonLeftCallback, this, std::placeholders::_1));
+    buttons.left.setCallback(std::bind(&StateMachine::buttonLeftCallback, this, std::placeholders::_1));
 
-    buttons.right.setCallback(
-        std::bind(&StateMachine::buttonRightCallback, this, std::placeholders::_1));
+    buttons.right.setCallback(std::bind(&StateMachine::buttonRightCallback, this, std::placeholders::_1));
 
-    buttons.snooze.setCallback(
-        std::bind(&StateMachine::buttonSnoozeCallback, this, std::placeholders::_1));
+    buttons.snooze.setCallback(std::bind(&StateMachine::buttonSnoozeCallback, this, std::placeholders::_1));
 
     buttons.brightnessPlus.setCallback(
         std::bind(&StateMachine::buttonBrightnessPlusCallback, this, std::placeholders::_1));
@@ -221,9 +235,7 @@ void StateMachine::assignButtonCallbacks()
     buttons.brightnessMinus.setCallback(
         std::bind(&StateMachine::buttonBrightnessMinusCallback, this, std::placeholders::_1));
 
-    buttons.cctPlus.setCallback(
-        std::bind(&StateMachine::buttonCCTPlusCallback, this, std::placeholders::_1));
+    buttons.cctPlus.setCallback(std::bind(&StateMachine::buttonCCTPlusCallback, this, std::placeholders::_1));
 
-    buttons.cctMinus.setCallback(
-        std::bind(&StateMachine::buttonCCTMinusCallback, this, std::placeholders::_1));
+    buttons.cctMinus.setCallback(std::bind(&StateMachine::buttonCCTMinusCallback, this, std::placeholders::_1));
 }

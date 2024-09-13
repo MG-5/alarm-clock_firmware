@@ -6,7 +6,7 @@ void StateMachine::handleTimeoutTimer()
     {
     case DisplayState::ClockWithAlarmLeds:
         stopTimeoutTimer();
-        displayState = DisplayState::Clock;
+        updateDisplayState(DisplayState::Clock);
         break;
 
     case DisplayState::ChangeAlarm1Hour:
@@ -14,25 +14,26 @@ void StateMachine::handleTimeoutTimer()
     case DisplayState::ChangeClockHour:
         blink = false;
         timeToModify.addHours(1);
+        revokeDisplayDelay();
         break;
 
     case DisplayState::ChangeAlarm1Minute:
     case DisplayState::ChangeAlarm2Minute:
         blink = false;
         timeToModify.addMinutes(5);
+        revokeDisplayDelay();
         break;
 
     case DisplayState::ChangeClockMinute:
         blink = false;
         timeToModify.addMinutes(1);
+        revokeDisplayDelay();
         break;
 
     default: // as fallback
         stopTimeoutTimer();
         break;
     }
-
-    notify(1, util::wrappers::NotifyAction::SetBits);
 }
 
 //-----------------------------------------------------------------
@@ -50,12 +51,12 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
             timeToModify = rtc.getAlarmTime1();
-            displayState = DisplayState::DisplayAlarm1;
+            updateDisplayState(DisplayState::DisplayAlarm1);
             break;
 
         case DisplayState::DisplayAlarm1:
             timeToModify = rtc.getAlarmTime2();
-            displayState = DisplayState::DisplayAlarm2;
+            updateDisplayState(DisplayState::DisplayAlarm2);
             break;
 
         case DisplayState::DisplayAlarm2:
@@ -63,27 +64,27 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::ChangeAlarm1Hour:
-            displayState = DisplayState::ChangeAlarm1Minute;
+            updateDisplayState(DisplayState::ChangeAlarm1Minute);
             break;
 
         case DisplayState::ChangeAlarm1Minute:
             signalResult(rtc.writeAlarmTime1(timeToModify));
             alarmMode = AlarmMode::Alarm1;
-            displayState = DisplayState::DisplayAlarm1;
+            updateDisplayState(DisplayState::DisplayAlarm1);
             break;
 
         case DisplayState::ChangeAlarm2Hour:
-            displayState = DisplayState::ChangeAlarm2Minute;
+            updateDisplayState(DisplayState::ChangeAlarm2Minute);
             break;
 
         case DisplayState::ChangeAlarm2Minute:
             signalResult(rtc.writeAlarmTime2(timeToModify));
             alarmMode = AlarmMode::Alarm2;
-            displayState = DisplayState::DisplayAlarm2;
+            updateDisplayState(DisplayState::DisplayAlarm2);
             break;
 
         case DisplayState::ChangeClockHour:
-            displayState = DisplayState::ChangeClockMinute;
+            updateDisplayState(DisplayState::ChangeClockMinute);
             break;
 
         case DisplayState::ChangeClockMinute:
@@ -92,7 +93,6 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             break;
 
         case DisplayState::Standby:
-            display.enableDisplay();
             goToDefaultState();
             break;
 
@@ -101,7 +101,6 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         }
 
         blink = true;
-        notify(1, util::wrappers::NotifyAction::SetBits);
     }
     break;
 
@@ -114,12 +113,12 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         {
         case DisplayState::DisplayAlarm1:
             blink = true;
-            displayState = DisplayState::ChangeAlarm1Hour;
+            updateDisplayState(DisplayState::ChangeAlarm1Hour);
             break;
 
         case DisplayState::DisplayAlarm2:
             blink = true;
-            displayState = DisplayState::ChangeAlarm2Hour;
+            updateDisplayState(DisplayState::ChangeAlarm2Hour);
             break;
 
         default:
@@ -140,7 +139,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         {
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            displayState = DisplayState::Standby;
+            updateDisplayState(DisplayState::Standby);
             break;
 
         default:
@@ -167,7 +166,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         {
         case DisplayState::Clock:
         case DisplayState::ClockWithAlarmLeds:
-            displayState = DisplayState::DisplayAlarmStatus;
+            updateDisplayState(DisplayState::DisplayAlarmStatus);
             break;
 
         case DisplayState::DisplayAlarmStatus:
@@ -190,6 +189,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
                 alarmMode = AlarmMode::Off;
                 break;
             }
+            revokeDisplayDelay();
         }
         break;
 
@@ -200,18 +200,16 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         case DisplayState::ChangeAlarm2Minute:
         case DisplayState::ChangeClockMinute:
             incrementNumber();
+            revokeDisplayDelay();
             break;
 
         case DisplayState::Standby:
-            display.enableDisplay();
             goToDefaultState();
             break;
 
         default:
             break;
         }
-
-        notify(1, util::wrappers::NotifyAction::SetBits);
 
         break;
     }
@@ -225,8 +223,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         case DisplayState::ChangeAlarm2Minute:
         case DisplayState::ChangeClockHour:
         case DisplayState::ChangeClockMinute:
-            setTimeoutTimerPeriod(250.0_ms);
-            resetTimeoutTimer();
+            setTimeoutAndStart(250.0_ms);
 
         default:
             break;
@@ -241,7 +238,7 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
             blink = true;
             timeToModify = rtc.getClockTime();
             timeToModify.second = 0;
-            displayState = DisplayState::ChangeClockHour;
+            updateDisplayState(DisplayState::ChangeClockHour);
         }
         break;
     }
@@ -273,20 +270,15 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             // do nothing
             break;
 
-        case DisplayState::Standby:
-            display.enableDisplay();
-            goToDefaultState();
-            break;
-
         case DisplayState::Test:
             // ToDo: abort test
             [[fallthrough]];
+        case DisplayState::Standby:
         default:
             goToDefaultState();
             break;
         }
 
-        notify(1, util::wrappers::NotifyAction::SetBits);
         break;
     }
     case util::Button::Action::LongPress:
