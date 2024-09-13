@@ -91,8 +91,8 @@ private:
 
     static constexpr auto WarmColorTemperature = 2700.0_K;
     static constexpr auto ColdColorTemperature = 6500.0_K;
-    static constexpr auto NeutralColorTemperature = 4500.0_K;
-    static constexpr auto ColorStep = 200.0_K;
+    static constexpr auto NeutralColorTemperature = 4000.0_K;
+    static constexpr auto ColorStep = 100.0_K;
     units::si::Temperature colorTemperature{NeutralColorTemperature};
     size_t warmWhiteBrightness = 0;
     size_t coldWhiteBrightness = 0;
@@ -106,17 +106,33 @@ private:
     using GammaCorrection_t = util::led::pwm::GammaCorrection<ResolutionBits, 10.0f>;
     static constexpr GammaCorrection_t GammaCorrection{};
 
-    using SingleLed = util::led::pwm::SingleLed<ResolutionBits,GammaCorrection_t>;
+    using SingleLed = util::led::pwm::SingleLed<ResolutionBits, GammaCorrection_t>;
 
     SingleLed warmWhiteLedStrip{util::PwmOutput<ResolutionBits>{ledTimerHandle, warmWhiteChannel}, GammaCorrection};
     SingleLed coldWhiteLedStrip{util::PwmOutput<ResolutionBits>{ledTimerHandle, coldWhiteChannel}, GammaCorrection};
 
     void mapColorTemperatureToStrip()
     {
-        warmWhiteBrightness =
-            PwmSteps - util::mapValue(WarmColorTemperature.getMagnitude(), ColdColorTemperature.getMagnitude(), 0U,
-                                      PwmSteps, colorTemperature.getMagnitude());
-        coldWhiteBrightness = PwmSteps - warmWhiteBrightness;
+        const auto ClampedColorTemperature = std::clamp(colorTemperature, WarmColorTemperature, ColdColorTemperature);
+
+        if (ClampedColorTemperature < NeutralColorTemperature)
+        {
+            // warm white has full brightness
+            warmWhiteBrightness = PwmSteps;
+            const float Factor =
+                ((ClampedColorTemperature - WarmColorTemperature) / (NeutralColorTemperature - WarmColorTemperature))
+                    .getMagnitude();
+            coldWhiteBrightness = Factor * PwmSteps;
+        }
+        else
+        {
+            // cold white has full brightness
+            coldWhiteBrightness = PwmSteps;
+            const float Factor = 1.0f - ((ClampedColorTemperature - NeutralColorTemperature) /
+                                         (ColdColorTemperature - NeutralColorTemperature))
+                                            .getMagnitude();
+            warmWhiteBrightness = Factor * PwmSteps;
+        }
 
         warmWhiteLedStrip.setTargetPwmValue(warmWhiteBrightness);
         coldWhiteLedStrip.setTargetPwmValue(coldWhiteBrightness);
