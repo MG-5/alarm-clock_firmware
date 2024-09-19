@@ -33,8 +33,10 @@ void StateMachine::taskMain(void *)
         case DisplayState::ClockWithAlarmLeds:
             display.setClock(rtc.getClockTime());
             display.showClock();
-            statusLeds.ledAlarm1.setState(alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
-            statusLeds.ledAlarm2.setState(alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
+            statusLeds.ledAlarm1.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
+                                          rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
+            statusLeds.ledAlarm2.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
+                                          rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
             delayUntilEventOrTimeout(1.0_s);
             break;
 
@@ -171,25 +173,25 @@ void StateMachine::showCurrentAlarmMode()
     display.gridDataArray[2].segments = font.getGlyph('A');
     display.gridDataArray[2].enableDots = true;
 
-    switch (alarmMode)
+    switch (rtc.getAlarmMode())
     {
-    case AlarmMode::Off:
+    case RealTimeClock::AlarmMode::Off:
         display.gridDataArray[3].segments = font.getGlyph('O');
         display.gridDataArray[4].segments = font.getGlyph('f');
         display.gridDataArray[5].segments = font.getGlyph('f');
         break;
 
-    case AlarmMode::Alarm1:
+    case RealTimeClock::AlarmMode::Alarm1:
         display.gridDataArray[4].segments = font.getGlyph('1');
         statusLeds.ledAlarm1.turnOn();
         break;
 
-    case AlarmMode::Alarm2:
+    case RealTimeClock::AlarmMode::Alarm2:
         display.gridDataArray[4].segments = font.getGlyph('2');
         statusLeds.ledAlarm2.turnOn();
         break;
 
-    case AlarmMode::Both:
+    case RealTimeClock::AlarmMode::Both:
         display.gridDataArray[3].segments = font.getGlyph('1');
         display.gridDataArray[4].segments = font.getGlyph('+');
         display.gridDataArray[5].segments = font.getGlyph('2');

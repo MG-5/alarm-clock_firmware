@@ -43,7 +43,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
     {
     case util::Button::Action::ShortPress:
     {
-        if (alarmState != AlarmState::Off)
+        if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
             return;
 
         switch (displayState)
@@ -69,7 +69,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
 
         case DisplayState::ChangeAlarm1Minute:
             signalResult(rtc.writeAlarmTime1(timeToModify));
-            alarmMode = AlarmMode::Alarm1;
+            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
             updateDisplayState(DisplayState::DisplayAlarm1);
             break;
 
@@ -79,7 +79,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
 
         case DisplayState::ChangeAlarm2Minute:
             signalResult(rtc.writeAlarmTime2(timeToModify));
-            alarmMode = AlarmMode::Alarm2;
+            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
             updateDisplayState(DisplayState::DisplayAlarm2);
             break;
 
@@ -106,7 +106,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
 
     case util::Button::Action::LongPress:
     {
-        if (alarmState != AlarmState::Off)
+        if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
             return;
 
         switch (displayState)
@@ -128,9 +128,9 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
     }
     case util::Button::Action::SuperLongPress:
     {
-        if (alarmState != AlarmState::Off)
+        if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         {
-            alarmState = AlarmState::Off;
+            rtc.setAlarmState(RealTimeClock::AlarmState::Off);
             // ToDo: disable vibration
             return;
         }
@@ -155,7 +155,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
 //-----------------------------------------------------------------
 void StateMachine::buttonRightCallback(util::Button::Action action)
 {
-    if (alarmState != AlarmState::Off)
+    if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         return;
 
     switch (action)
@@ -171,22 +171,22 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
         case DisplayState::DisplayAlarmStatus:
         {
-            switch (alarmMode)
+            switch (rtc.getAlarmMode())
             {
-            case AlarmMode::Off:
-                alarmMode = AlarmMode::Alarm1;
+            case RealTimeClock::AlarmMode::Off:
+                rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
                 break;
 
-            case AlarmMode::Alarm1:
-                alarmMode = AlarmMode::Alarm2;
+            case RealTimeClock::AlarmMode::Alarm1:
+                rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
                 break;
 
-            case AlarmMode::Alarm2:
-                alarmMode = AlarmMode::Both;
+            case RealTimeClock::AlarmMode::Alarm2:
+                rtc.setAlarmMode(RealTimeClock::AlarmMode::Both);
                 break;
 
-            case AlarmMode::Both:
-                alarmMode = AlarmMode::Off;
+            case RealTimeClock::AlarmMode::Both:
+                rtc.setAlarmMode(RealTimeClock::AlarmMode::Off);
                 break;
             }
             revokeDisplayDelay();
@@ -255,7 +255,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     {
     case util::Button::Action::ShortPress:
     {
-        if (alarmState == AlarmState::Vibration)
+        if (rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration)
         {
             // ToDo: snooze
             return;
@@ -283,7 +283,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     }
     case util::Button::Action::LongPress:
     {
-        if (alarmState == AlarmState::Vibration)
+        if (rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration)
         {
             // ToDo: snooze
             return;

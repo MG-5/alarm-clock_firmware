@@ -46,22 +46,6 @@ public:
         Test
     };
 
-    enum class AlarmState
-    {
-        Off,
-        Sunrise,
-        Vibration,
-        Snooze
-    };
-
-    enum class AlarmMode
-    {
-        Off,
-        Alarm1,
-        Alarm2,
-        Both
-    };
-
     void handleTimeoutTimer();
 
 protected:
@@ -76,8 +60,6 @@ private:
 
     DisplayState displayState = DisplayState::Clock;
     DisplayState previousDisplayState = DisplayState::Standby;
-    AlarmState alarmState = AlarmState::Off;
-    AlarmMode alarmMode = AlarmMode::Both;
     bool blink = true;
 
     Time timeToModify;

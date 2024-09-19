@@ -42,18 +42,48 @@ void RealTimeClock::taskMain(void *)
     auto lastWakeTime = xTaskGetTickCount();
     while (true)
     {
-        auto timeValueOptional = rtcModule.getTime();
+        fetchTime();
+        manageAlarmEvents();
 
-        if (timeValueOptional)
-            clockTime = timeValueOptional.value();
-        else
-        {
-            // ToDo: error handling (e.g. flag for state machine)
-
-            // increment seconds as fallback
-            clockTime.addSeconds(1);
-        }
         vTaskDelayUntil(&lastWakeTime, toOsTicks(1.0_s));
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+void RealTimeClock::fetchTime()
+{
+    auto timeValueOptional = rtcModule.getTime();
+
+    if (timeValueOptional)
+        clockTime = timeValueOptional.value();
+    else
+    {
+        // ToDo: error handling (e.g. flag for state machine)
+
+        // increment seconds as fallback
+        clockTime.addSeconds(1);
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+void RealTimeClock::manageAlarmEvents()
+{
+    if (alarmState != AlarmState::Off)
+    {
+        // alarm already triggered
+        // ToDo: transition sunrise -> vibration -> snooze - vibration -> off
+    }
+    else if (clockTime.hour == alarmTime1.hour && clockTime.minute == alarmTime1.minute //
+             && (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both))
+    {
+        alarmState = AlarmState::Sunrise;
+        // ToDo: implement alarm1 handling
+    }
+    else if (clockTime.hour == alarmTime2.hour && clockTime.minute == alarmTime2.minute //
+             && (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both))
+    {
+        alarmState = AlarmState::Sunrise;
+        // ToDo: implement alarm2 handling
     }
 }
 
