@@ -9,7 +9,7 @@ void StateMachine::taskMain(void *)
 
     while (true)
     {
-        display.gridDataArray.fill(Display::GridData{});
+        display.clearGridDataArray();
         statusLeds.ledAlarm1.turnOff();
         statusLeds.ledAlarm2.turnOff();
 
@@ -151,7 +151,7 @@ void StateMachine::showHourChanging()
     if (blink)
     {
         // replace numbers with underscore
-        display.gridDataArray[1].segments = display.gridDataArray[2].segments = font.getGlyph('_');
+        display.getGridDataArray()[1].segments = display.getGridDataArray()[2].segments = font.getGlyph('_');
     }
 }
 
@@ -163,38 +163,38 @@ void StateMachine::showMinuteChanging()
     if (blink)
     {
         // replace numbers with underscore
-        display.gridDataArray[3].segments = display.gridDataArray[4].segments = font.getGlyph('_');
+        display.getGridDataArray()[3].segments = display.getGridDataArray()[4].segments = font.getGlyph('_');
     }
 }
 
 //-----------------------------------------------------------------
 void StateMachine::showCurrentAlarmMode()
 {
-    display.gridDataArray[2].segments = font.getGlyph('A');
-    display.gridDataArray[2].enableDots = true;
+    display.getGridDataArray()[2].segments = font.getGlyph('A');
+    display.getGridDataArray()[2].enableDots = true;
 
     switch (rtc.getAlarmMode())
     {
     case RealTimeClock::AlarmMode::Off:
-        display.gridDataArray[3].segments = font.getGlyph('O');
-        display.gridDataArray[4].segments = font.getGlyph('f');
-        display.gridDataArray[5].segments = font.getGlyph('f');
+        display.getGridDataArray()[3].segments = font.getGlyph('O');
+        display.getGridDataArray()[4].segments = font.getGlyph('f');
+        display.getGridDataArray()[5].segments = font.getGlyph('f');
         break;
 
     case RealTimeClock::AlarmMode::Alarm1:
-        display.gridDataArray[4].segments = font.getGlyph('1');
+        display.getGridDataArray()[4].segments = font.getGlyph('1');
         statusLeds.ledAlarm1.turnOn();
         break;
 
     case RealTimeClock::AlarmMode::Alarm2:
-        display.gridDataArray[4].segments = font.getGlyph('2');
+        display.getGridDataArray()[4].segments = font.getGlyph('2');
         statusLeds.ledAlarm2.turnOn();
         break;
 
     case RealTimeClock::AlarmMode::Both:
-        display.gridDataArray[3].segments = font.getGlyph('1');
-        display.gridDataArray[4].segments = font.getGlyph('+');
-        display.gridDataArray[5].segments = font.getGlyph('2');
+        display.getGridDataArray()[3].segments = font.getGlyph('1');
+        display.getGridDataArray()[4].segments = font.getGlyph('+');
+        display.getGridDataArray()[5].segments = font.getGlyph('2');
         statusLeds.ledAlarm1.turnOn();
         statusLeds.ledAlarm2.turnOn();
         break;
@@ -204,13 +204,13 @@ void StateMachine::showCurrentAlarmMode()
 //-----------------------------------------------------------------
 void StateMachine::showCurrentBrightness()
 {
-    display.gridDataArray[2].segments = font.getGlyph('B');
-    display.gridDataArray[2].enableDots = true;
+    display.getGridDataArray()[2].segments = font.getGlyph('B');
+    display.getGridDataArray()[2].enableDots = true;
 
     uint8_t brightness = ledStrip.getGlobalBrightness();
-    display.gridDataArray[3].segments = font.getGlyph('0' + brightness / 100);
-    display.gridDataArray[4].segments = font.getGlyph('0' + (brightness % 100) / 10);
-    display.gridDataArray[5].segments = font.getGlyph('0' + brightness % 10);
+    display.getGridDataArray()[3].segments = font.getGlyph('0' + brightness / 100);
+    display.getGridDataArray()[4].segments = font.getGlyph('0' + (brightness % 100) / 10);
+    display.getGridDataArray()[5].segments = font.getGlyph('0' + brightness % 10);
 }
 
 //-----------------------------------------------------------------
@@ -218,11 +218,12 @@ void StateMachine::showCurrentCCT()
 {
     const uint16_t Cct = ledStrip.getColorTemperature().getMagnitude<uint16_t>();
 
-    display.gridDataArray[1].segments = font.getGlyph('0' + Cct / 1000);
-    display.gridDataArray[2].segments = font.getGlyph('0' + (Cct % 1000) / 100);
-    display.gridDataArray[3].segments = font.getGlyph('0' + (Cct % 100) / 10);
-    display.gridDataArray[4].segments = font.getGlyph('0' + Cct % 10);
-    display.gridDataArray[5].segments = font.getGlyph('K');
+    display.getGridDataArray()[1].segments = font.getGlyph('0' + Cct / 1000);
+    display.getGridDataArray()[1].segments = font.getGlyph('0' + Cct / 1000);
+    display.getGridDataArray()[2].segments = font.getGlyph('0' + (Cct % 1000) / 100);
+    display.getGridDataArray()[3].segments = font.getGlyph('0' + (Cct % 100) / 10);
+    display.getGridDataArray()[4].segments = font.getGlyph('0' + Cct % 10);
+    display.getGridDataArray()[5].segments = font.getGlyph('K');
 }
 
 //-----------------------------------------------------------------
@@ -275,18 +276,12 @@ void StateMachine::restorePreviousState()
 void StateMachine::assignButtonCallbacks()
 {
     buttons.left.setCallback(std::bind(&StateMachine::buttonLeftCallback, this, std::placeholders::_1));
-
     buttons.right.setCallback(std::bind(&StateMachine::buttonRightCallback, this, std::placeholders::_1));
-
     buttons.snooze.setCallback(std::bind(&StateMachine::buttonSnoozeCallback, this, std::placeholders::_1));
-
     buttons.brightnessPlus.setCallback(
         std::bind(&StateMachine::buttonBrightnessPlusCallback, this, std::placeholders::_1));
-
     buttons.brightnessMinus.setCallback(
         std::bind(&StateMachine::buttonBrightnessMinusCallback, this, std::placeholders::_1));
-
     buttons.cctPlus.setCallback(std::bind(&StateMachine::buttonCCTPlusCallback, this, std::placeholders::_1));
-
     buttons.cctMinus.setCallback(std::bind(&StateMachine::buttonCCTMinusCallback, this, std::placeholders::_1));
 }

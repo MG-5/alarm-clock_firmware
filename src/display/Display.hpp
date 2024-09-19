@@ -9,7 +9,7 @@
 class Display
 {
 public:
-    Display(DisplayDimming &dimming) : dimming(dimming){};
+    Display(DisplayDimming &dimming) : dimming(dimming) {};
 
     // APP = 80MHz -> 1MHz = 1µs -> prescaler 80-1
     // auto reload period = 249 -> interrupt every 250µs
@@ -24,6 +24,7 @@ public:
 
     void enableDisplay(bool startMultiplexing = true);
     void disableDisplay();
+    void clearGridDataArray();
 
     static constexpr auto NumberOfGrids = 6;
 
@@ -35,7 +36,10 @@ public:
         bool enableLowerBar = false;
     };
 
-    std::array<GridData, NumberOfGrids> gridDataArray{};
+    std::array<GridData, NumberOfGrids> &getGridDataArray()
+    {
+        return gridDataArray;
+    }
 
     void setClock(Time clockToShow);
     void showClock(bool forceShowDots = false);
@@ -54,17 +58,16 @@ private:
     util::Gpio shiftRegisterStrobe{Strobe_GPIO_Port, Strobe_Pin};
 
     std::array<util::Gpio, NumberOfGrids> gridGpioArray //
-        {util::Gpio(enableGrid0_GPIO_Port, enableGrid0_Pin),
-         util::Gpio(enableGrid1_GPIO_Port, enableGrid1_Pin),
-         util::Gpio(enableGrid2_GPIO_Port, enableGrid2_Pin),
-         util::Gpio(enableGrid3_GPIO_Port, enableGrid3_Pin),
-         util::Gpio(enableGrid4_GPIO_Port, enableGrid4_Pin),
-         util::Gpio(enableGrid5_GPIO_Port, enableGrid5_Pin)};
+        {util::Gpio(enableGrid0_GPIO_Port, enableGrid0_Pin), util::Gpio(enableGrid1_GPIO_Port, enableGrid1_Pin),
+         util::Gpio(enableGrid2_GPIO_Port, enableGrid2_Pin), util::Gpio(enableGrid3_GPIO_Port, enableGrid3_Pin),
+         util::Gpio(enableGrid4_GPIO_Port, enableGrid4_Pin), util::Gpio(enableGrid5_GPIO_Port, enableGrid5_Pin)};
+
+    std::array<GridData, NumberOfGrids> gridDataArray{};
 
     void clockPeriod();
     void strobePeriod();
-    void sendSegmentBits(uint32_t bits, bool forceLatch = true, bool enableDots = false,
-                         bool enableUpperBar = false, bool enableLowerBar = false);
+    void sendSegmentBits(uint32_t bits, bool forceLatch = true, bool enableDots = false, bool enableUpperBar = false,
+                         bool enableLowerBar = false);
 
     void disableAllGrids();
 

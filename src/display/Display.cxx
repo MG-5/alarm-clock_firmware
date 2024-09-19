@@ -132,6 +132,12 @@ inline void Display::disableAllGrids()
 }
 
 //--------------------------------------------------------------------------------------------------
+void Display::clearGridDataArray()
+{
+    gridDataArray.fill(Display::GridData{});
+}
+
+//--------------------------------------------------------------------------------------------------
 void Display::setClock(Time clockToShow)
 {
     currentTime = clockToShow;
