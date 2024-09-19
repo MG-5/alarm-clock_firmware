@@ -61,8 +61,16 @@ private:
     DisplayState displayState = DisplayState::Clock;
     DisplayState previousDisplayState = DisplayState::Standby;
     bool blink = true;
+    size_t secondsCounter = 0;
+
+    bool initialAlarm = true;
+    size_t alarmStateCounter = 0;
 
     Time timeToModify;
+
+    void showClockWithBlinkingAlarm();
+    void evaluateDisplayState();
+    void checkIfGoToStandby();
 
     void displayLedInitialization();
     void waitForRtc();
@@ -90,8 +98,13 @@ private:
     void buttonCCTPlusCallback(util::Button::Action action);
     void buttonCCTMinusCallback(util::Button::Action action);
 
+    bool isInChangeScreen();
     void incrementNumber();
     void decrementNumber();
+
+    void switchToLedChangeScreen(DisplayState newState);
+    void handlePlusMinusButtons(util::Button::Action action, bool isIncrementing, bool isBrightness);
+    bool isIncrementing = true;
 
     TimerCallbackFunction_t timeoutCallback = nullptr;
 

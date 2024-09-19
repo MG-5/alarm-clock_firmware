@@ -8,7 +8,7 @@ class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 public:
     RealTimeClock(I2cAccessor &i2cAccessor)
         : TaskWithMemberFunctionBase("rtcTask", 256, osPriorityBelowNormal5), //
-          i2cAccessor(i2cAccessor){};
+          i2cAccessor(i2cAccessor) {};
 
     enum class AlarmState
     {
@@ -73,7 +73,10 @@ private:
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
 
-    void fetchTime();
-    void manageAlarmEvents();
+    bool isAlarmAlreadyTriggered = false;
+
+    void setupRtcAndAlarms();
+    void fetchClockTime();
+    void checkIfAlarmShouldTrigger();
     void initRTC();
 };

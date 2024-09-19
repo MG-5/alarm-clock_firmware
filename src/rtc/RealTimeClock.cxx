@@ -4,7 +4,24 @@
 
 void RealTimeClock::taskMain(void *)
 {
-    // start up RTC and load values
+    setupRtcAndAlarms();
+    syncEventGroup.setBits(sync::RtcHasRespondedOnce);
+
+    auto lastWakeTime = xTaskGetTickCount();
+    while (true)
+    {
+        // load current time every second
+        fetchClockTime();
+        checkIfAlarmShouldTrigger();
+
+        vTaskDelayUntil(&lastWakeTime, toOsTicks(1.0_s));
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+/// try to initialize RTC until it is online and returns valid time and alarms
+void RealTimeClock::setupRtcAndAlarms()
+{
     while (true)
     {
         initRTC();
@@ -32,25 +49,13 @@ void RealTimeClock::taskMain(void *)
             writeAlarmTime1(alarmTime1);
             writeAlarmTime2(alarmTime2);
 
-            break;
+            return;
         }
-    }
-
-    syncEventGroup.setBits(sync::RtcHasRespondedOnce);
-
-    // load current time every second
-    auto lastWakeTime = xTaskGetTickCount();
-    while (true)
-    {
-        fetchTime();
-        manageAlarmEvents();
-
-        vTaskDelayUntil(&lastWakeTime, toOsTicks(1.0_s));
     }
 }
 
 //--------------------------------------------------------------------------------------------------
-void RealTimeClock::fetchTime()
+void RealTimeClock::fetchClockTime()
 {
     auto timeValueOptional = rtcModule.getTime();
 
@@ -66,25 +71,32 @@ void RealTimeClock::fetchTime()
 }
 
 //--------------------------------------------------------------------------------------------------
-void RealTimeClock::manageAlarmEvents()
+void RealTimeClock::checkIfAlarmShouldTrigger()
 {
     if (alarmState != AlarmState::Off)
+        return;
+
+    // lambda function to check if give alarm time matchs current time
+    auto checkAlarm = [this](Time &&alarmTime)
+    { return clockTime.hour == alarmTime.hour && clockTime.minute == alarmTime.minute; };
+
+    static const Time HalfHourBeforeAlarm{"00:30"};
+    bool alarm1Triggered = checkAlarm(alarmTime1 - HalfHourBeforeAlarm) &&
+                           (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
+
+    bool alarm2Triggered = checkAlarm(alarmTime2 - HalfHourBeforeAlarm) &&
+                           (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
+
+    if (alarm1Triggered || alarm2Triggered)
     {
-        // alarm already triggered
-        // ToDo: transition sunrise -> vibration -> snooze - vibration -> off
-    }
-    else if (clockTime.hour == alarmTime1.hour && clockTime.minute == alarmTime1.minute //
-             && (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both))
-    {
+        if (isAlarmAlreadyTriggered)
+            return;
+
+        isAlarmAlreadyTriggered = true;
         alarmState = AlarmState::Sunrise;
-        // ToDo: implement alarm1 handling
     }
-    else if (clockTime.hour == alarmTime2.hour && clockTime.minute == alarmTime2.minute //
-             && (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both))
-    {
-        alarmState = AlarmState::Sunrise;
-        // ToDo: implement alarm2 handling
-    }
+    else
+        isAlarmAlreadyTriggered = false;
 }
 
 //--------------------------------------------------------------------------------------------------

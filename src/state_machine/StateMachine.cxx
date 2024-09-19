@@ -17,108 +17,169 @@ void StateMachine::taskMain(void *)
         if (!rtc.isRtcOnline())
             statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Red);
 
-        switch (displayState)
+        // check if alarm is activated
+        if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         {
-        case DisplayState::Standby:
-            display.disableDisplay();
-            delayUntilEventOrTimeout(0.0_s, true);
-            break;
+            if (initialAlarm)
+            {
+                initialAlarm = false;
+                alarmStateCounter = 0;
+                updateDisplayState(DisplayState::Clock); // also wake up display
+                ledStrip.turnOn();
+            }
 
-        case DisplayState::Clock:
-            display.setClock(rtc.getClockTime());
-            display.showClock();
+            showClockWithBlinkingAlarm();
+            // ToDo: transition sunrise -> vibration -snooze - off
             delayUntilEventOrTimeout(1.0_s);
-            break;
-
-        case DisplayState::ClockWithAlarmLeds:
-            display.setClock(rtc.getClockTime());
-            display.showClock();
-            statusLeds.ledAlarm1.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
-                                          rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
-            statusLeds.ledAlarm2.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
-                                          rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
-            delayUntilEventOrTimeout(1.0_s);
-            break;
-
-        case DisplayState::DisplayAlarm1:
-            display.setClock(rtc.getAlarmTime1());
-            display.showClock(true);
-            statusLeds.ledAlarm1.setState(blink);
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::DisplayAlarm2:
-            display.setClock(rtc.getAlarmTime2());
-            display.showClock(true);
-            statusLeds.ledAlarm2.setState(blink);
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::ChangeAlarm1Hour:
-            showHourChanging();
-            statusLeds.ledAlarm1.turnOn();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::ChangeAlarm2Hour:
-            showHourChanging();
-            statusLeds.ledAlarm2.turnOn();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::ChangeAlarm1Minute:
-            showMinuteChanging();
-            statusLeds.ledAlarm1.turnOn();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::ChangeAlarm2Minute:
-            showMinuteChanging();
-            statusLeds.ledAlarm2.turnOn();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::DisplayAlarmStatus:
-            showCurrentAlarmMode();
-            if (delayUntilEventOrTimeout(3.0_s))
-                goToDefaultState();
-            break;
-
-        case DisplayState::ChangeClockHour:
-            showHourChanging();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::ChangeClockMinute:
-            showMinuteChanging();
-            blink = !blink;
-            delayUntilEventOrTimeout(500.0_ms);
-            break;
-
-        case DisplayState::LedBrightness:
-            showCurrentBrightness();
-            if (delayUntilEventOrTimeout(4.0_s))
-                restorePreviousState();
-            break;
-
-        case DisplayState::LedCCT:
-            showCurrentCCT();
-            if (delayUntilEventOrTimeout(4.0_s))
-                restorePreviousState();
-            break;
-
-        default:
-            break;
+            continue; // bypass displayState evaluation
         }
+
+        checkIfGoToStandby();
+        evaluateDisplayState();
     }
 };
+
+// -----------------------------------------------------------------
+/// draw display with clock and blinking alarm LEDs
+void StateMachine::showClockWithBlinkingAlarm()
+{
+    auto currentClockTime = rtc.getClockTime();
+    display.setClock(currentClockTime);
+    display.showClock();
+    bool shouldBlink = currentClockTime.second % 2 == 0;
+    statusLeds.ledAlarm1.setState(shouldBlink && (rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
+                                                  rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both));
+    statusLeds.ledAlarm2.setState(shouldBlink && (rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
+                                                  rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both));
+}
+
+//-----------------------------------------------------------------
+void StateMachine::checkIfGoToStandby()
+{
+    // ToDo: wake up after 7:00
+
+    if (displayState == DisplayState::Clock && !ledStrip.isLedStripEnabled())
+    {
+        // go to standby between 23:00 and 7:00
+        if (rtc.getClockTime().hour >= 23 || rtc.getClockTime().hour < 7)
+        {
+            if (secondsCounter++ >= 10)
+            {
+                secondsCounter = 0;
+                updateDisplayState(DisplayState::Standby);
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------
+void StateMachine::evaluateDisplayState()
+{
+    switch (displayState)
+    {
+    case DisplayState::Standby:
+        delayUntilEventOrTimeout(1.0_s);
+        break;
+
+    case DisplayState::Clock:
+        display.setClock(rtc.getClockTime());
+        display.showClock();
+        delayUntilEventOrTimeout(1.0_s);
+        break;
+
+    case DisplayState::ClockWithAlarmLeds:
+        display.setClock(rtc.getClockTime());
+        display.showClock();
+        statusLeds.ledAlarm1.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
+                                      rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
+        statusLeds.ledAlarm2.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
+                                      rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
+        if (delayUntilEventOrTimeout(1.0_s))
+            if (secondsCounter++ >= 3)
+            {
+                secondsCounter = 0;
+                updateDisplayState(DisplayState::Clock);
+            }
+        break;
+
+    case DisplayState::DisplayAlarm1:
+        display.setClock(rtc.getAlarmTime1());
+        display.showClock(true);
+        statusLeds.ledAlarm1.setState(blink);
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::DisplayAlarm2:
+        display.setClock(rtc.getAlarmTime2());
+        display.showClock(true);
+        statusLeds.ledAlarm2.setState(blink);
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::ChangeAlarm1Hour:
+        showHourChanging();
+        statusLeds.ledAlarm1.turnOn();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::ChangeAlarm2Hour:
+        showHourChanging();
+        statusLeds.ledAlarm2.turnOn();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::ChangeAlarm1Minute:
+        showMinuteChanging();
+        statusLeds.ledAlarm1.turnOn();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::ChangeAlarm2Minute:
+        showMinuteChanging();
+        statusLeds.ledAlarm2.turnOn();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::DisplayAlarmStatus:
+        showCurrentAlarmMode();
+        if (delayUntilEventOrTimeout(3.0_s))
+            goToDefaultState();
+        break;
+
+    case DisplayState::ChangeClockHour:
+        showHourChanging();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::ChangeClockMinute:
+        showMinuteChanging();
+        blink = !blink;
+        delayUntilEventOrTimeout(500.0_ms);
+        break;
+
+    case DisplayState::LedBrightness:
+        showCurrentBrightness();
+        if (delayUntilEventOrTimeout(4.0_s))
+            restorePreviousState();
+        break;
+
+    case DisplayState::LedCCT:
+        showCurrentCCT();
+        if (delayUntilEventOrTimeout(4.0_s))
+            restorePreviousState();
+        break;
+
+    default:
+        break;
+    }
+}
 
 //-----------------------------------------------------------------
 void StateMachine::displayLedInitialization()
@@ -256,8 +317,8 @@ void StateMachine::revokeDisplayDelay()
 //-----------------------------------------------------------------
 void StateMachine::goToDefaultState()
 {
+    secondsCounter = 0;
     updateDisplayState(DisplayState::ClockWithAlarmLeds);
-    setTimeoutAndStart(4.0_s);
 }
 
 //-----------------------------------------------------------------

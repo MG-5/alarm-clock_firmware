@@ -19,12 +19,26 @@ public:
         SafeAssert(this->ledTimerHandle != nullptr);
     }
 
+    void turnOn()
+    {
+        setState(true);
+    }
+
+    void turnOff()
+    {
+        setState(false);
+    }
+
     void toggleState()
     {
-        isEnabled = !isEnabled;
+        setState(!isEnabled);
+    }
 
-        warmWhiteLedStrip.setState(isEnabled);
-        coldWhiteLedStrip.setState(isEnabled);
+    void setState(bool state)
+    {
+        isEnabled = state;
+        warmWhiteLedStrip.setState(state);
+        coldWhiteLedStrip.setState(state);
     }
 
     void incrementBrightness()
@@ -43,7 +57,7 @@ public:
         updateBrightness();
     }
 
-    void incrementColorTemperature()
+    void incrementCCT()
     {
         if (colorTemperature < ColdColorTemperature)
             colorTemperature += ColorStep;
@@ -51,7 +65,7 @@ public:
         mapColorTemperatureToStrip();
     }
 
-    void decrementColorTemperature()
+    void decrementCCT()
     {
         if (colorTemperature > WarmColorTemperature)
             colorTemperature -= ColorStep;
@@ -67,6 +81,11 @@ public:
     units::si::Temperature getColorTemperature() const
     {
         return colorTemperature;
+    }
+
+    bool isLedStripEnabled() const
+    {
+        return isEnabled;
     }
 
 protected:
