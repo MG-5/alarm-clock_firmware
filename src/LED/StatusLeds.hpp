@@ -16,7 +16,7 @@ public:
           ledGreenChannel(ledGreenChannel),                                                                 //
           timeoutCallback(timeoutCallback)
     {
-        SafeAssert(this->ledTimerHandle != nullptr);
+        configASSERT(this->ledTimerHandle != nullptr);
     }
 
     void handleTimeoutTimer()

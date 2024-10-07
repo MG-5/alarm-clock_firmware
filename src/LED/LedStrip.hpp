@@ -16,7 +16,7 @@ public:
           warmWhiteChannel(warmWhiteChannel),                                                              //
           coldWhiteChannel(coldWhiteChannel)                                                               //
     {
-        SafeAssert(this->ledTimerHandle != nullptr);
+        configASSERT(this->ledTimerHandle != nullptr);
     }
 
     void turnOn()
