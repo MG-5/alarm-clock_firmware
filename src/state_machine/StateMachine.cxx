@@ -25,7 +25,7 @@ void StateMachine::taskMain(void *)
                 initialAlarm = false;
                 alarmStateCounter = 0;
                 updateDisplayState(DisplayState::Clock); // also wake up display
-                ledStrip.turnOn();
+                ledStrip.turnOnWithFading();
             }
 
             showClockWithBlinkingAlarm();

@@ -24,14 +24,22 @@ public:
         ledRedGreen.turnOff();
     }
 
+    void setGlobalBrightness(uint8_t newBrightness)
+    {
+        globalBrightness = newBrightness;
+        updateBrightness();
+    }
+
+    uint8_t getGlobalBrightness() const
+    {
+        return globalBrightness;
+    }
+
 protected:
     [[noreturn]] void taskMain(void *)
     {
-        ledAlarm1.setBrightness(25);
-        ledAlarm2.setBrightness(25);
-        ledRedGreen.setBrightness(25);
-
         auto lastWakeTime = xTaskGetTickCount();
+        updateBrightness();
 
         while (true)
         {
@@ -58,6 +66,8 @@ public:
     static constexpr auto ResolutionBits = std::bit_width<size_t>(PwmSteps - 1);
     using GammaCorrection_t = util::led::pwm::GammaCorrection<ResolutionBits>;
     static constexpr GammaCorrection_t GammaCorrection{};
+
+    uint8_t globalBrightness = 25;
 
     using SingleLed = util::led::pwm::SingleLed<ResolutionBits, GammaCorrection_t>;
     using DualLed = util::led::pwm::DualLed<ResolutionBits, GammaCorrection_t>;
@@ -94,5 +104,12 @@ public:
         ledRedGreen.setColor(util::led::pwm::DualLedColor::Red);
         xTimerChangePeriod(timeoutTimer, toOsTicks(5.0_s), 0);
         xTimerReset(timeoutTimer, 0);
+    }
+
+    void updateBrightness()
+    {
+        ledAlarm1.setLightLevel(PwmSteps * globalBrightness / 100);
+        ledAlarm2.setLightLevel(PwmSteps * globalBrightness / 100);
+        ledRedGreen.setBrightness(globalBrightness);
     }
 };
