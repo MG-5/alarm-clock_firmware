@@ -25,7 +25,7 @@ void StateMachine::taskMain(void *)
                 initialAlarm = false;
                 alarmStateCounter = 0;
                 updateDisplayState(DisplayState::Clock); // also wake up display
-                ledStrip.turnOnWithFading();
+                ledStrip.turnOnWithFade();
             }
 
             showClockWithBlinkingAlarm();
@@ -58,7 +58,7 @@ void StateMachine::checkIfGoToStandby()
 {
     // ToDo: wake up after 7:00
 
-    if (displayState == DisplayState::Clock && !ledStrip.isLedStripEnabled())
+    if (displayState == DisplayState::Clock && !isLedStripOn)
     {
         // go to standby between 23:00 and 7:00
         if (rtc.getClockTime().hour >= 23 || rtc.getClockTime().hour < 7)
@@ -186,13 +186,12 @@ void StateMachine::displayLedInitialization()
 {
     display.setup();
 
-    /*
     display.showInitialization();
-    statusLeds.ledRedGreen.setColor(util::pwm_led::DualLedColor::Orange);
+    statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Orange);
     statusLeds.turnAllOn();
     vTaskDelay(toOsTicks(1.0_s));
     statusLeds.turnAllOff();
-    */
+
     display.enableDisplay(); // start multiplexing
 }
 

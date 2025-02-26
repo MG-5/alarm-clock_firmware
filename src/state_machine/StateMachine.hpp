@@ -62,6 +62,7 @@ private:
     DisplayState previousDisplayState = DisplayState::Standby;
     bool blink = true;
     size_t secondsCounter = 0;
+    bool isLedStripOn = false;
 
     bool initialAlarm = true;
     size_t alarmStateCounter = 0;
