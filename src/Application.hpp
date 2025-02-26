@@ -2,7 +2,6 @@
 
 #include "LED/LedStrip.hpp"
 #include "LED/StatusLeds.hpp"
-#include "buttons/Buttons.hpp"
 #include "display/Display.hpp"
 #include "rtc/RealTimeClock.hpp"
 #include "state_machine/StateMachine.hpp"
@@ -49,10 +48,8 @@ private:
                           LedRedChannel,     LedGreenChannel,  statusLedsTimeoutCallback};
     LedStrip ledStrip{LedStripPwmTimer, WarmWhiteChannel, ColdWhiteChannel};
 
-    Buttons buttons{};
-
     I2cAccessor i2cBusAccessor{RtcBus};
     RealTimeClock rtc{i2cBusAccessor};
 
-    StateMachine stateMachine{display, statusLeds, ledStrip, buttons, rtc, &stateMachineTimeoutCallback};
+    StateMachine stateMachine{display, statusLeds, ledStrip, rtc, &stateMachineTimeoutCallback};
 };

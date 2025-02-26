@@ -1,4 +1,4 @@
-#include "StateMachine.hpp"
+#include "../StateMachine.hpp"
 
 void StateMachine::handleTimeoutTimer()
 {
@@ -280,7 +280,8 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     }
     case util::Button::Action::LongPress:
     {
-        ledStrip.toggleState();
+        isLedStripOn = !isLedStripOn;
+        isLedStripOn ? ledStrip.turnOnWithFade() : ledStrip.turnOffWithFade();
         if (displayState == DisplayState::Standby)
             updateDisplayState(DisplayState::Clock);
         break;

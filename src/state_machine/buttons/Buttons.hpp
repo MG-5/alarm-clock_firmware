@@ -7,6 +7,7 @@
 #include "wrappers/Task.hpp"
 
 /// all buttons are handled here, incl. debouncing, long press detection etc
+/// callbacks are assigned inside state machine
 class Buttons : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:

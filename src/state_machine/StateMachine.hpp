@@ -14,13 +14,12 @@
 class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(Display &display, StatusLeds &statusLeds, LedStrip &ledStrip, Buttons &buttons, RealTimeClock &rtc,
+    StateMachine(Display &display, StatusLeds &statusLeds, LedStrip &ledStrip, RealTimeClock &rtc,
                  TimerCallbackFunction_t timeoutCallback)
         : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityBelowNormal4), //
           display(display),                                                            //
           statusLeds(statusLeds),                                                      //
           ledStrip(ledStrip),                                                          //
-          buttons(buttons),                                                            //
           rtc(rtc),                                                                    //
           timeoutCallback(timeoutCallback)
     {
@@ -55,8 +54,9 @@ private:
     Display &display;
     StatusLeds &statusLeds;
     LedStrip &ledStrip;
-    Buttons &buttons;
     RealTimeClock &rtc;
+
+    Buttons buttons{};
 
     DisplayState displayState = DisplayState::Clock;
     DisplayState previousDisplayState = DisplayState::Standby;
