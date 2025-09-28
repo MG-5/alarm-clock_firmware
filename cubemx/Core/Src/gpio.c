@@ -32,14 +32,8 @@
 
 /* USER CODE END 1 */
 
-/** Configure pins as
-        * Analog
-        * Input
-        * Output
-        * EVENT_OUT
-        * EXTI
-        * Free pins are configured automatically as Analog (this feature is enabled through
-        * the Code Generation settings)
+/** Configure pins
+     PA7   ------> TIM1_CH1N
 */
 void MX_GPIO_Init(void)
 {
@@ -87,6 +81,14 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(ButtonSnooze_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : VibrationCushion_Pin */
+  GPIO_InitStruct.Pin = VibrationCushion_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+  HAL_GPIO_Init(VibrationCushion_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ButtonBrightnessPlus_Pin ButtonBrightnessMinus_Pin ButtonCCTPlus_Pin ButtonCCTMinus_Pin */
   GPIO_InitStruct.Pin = ButtonBrightnessPlus_Pin|ButtonBrightnessMinus_Pin|ButtonCCTPlus_Pin|ButtonCCTMinus_Pin;

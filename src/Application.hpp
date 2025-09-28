@@ -11,7 +11,7 @@
 class Application
 {
 public:
-    static constexpr auto MultiplexingPwmTimer = &htim1;
+    static constexpr auto MultiplexingPwmTimer = &htim16;
     static constexpr auto PwmTimChannel = TIM_CHANNEL_1;
 
     static constexpr auto StatusLedPwmTimer = &htim2;

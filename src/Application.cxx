@@ -75,23 +75,17 @@ void Application::pwmTimerCompare()
 
 //--------------------------------------------------------------------------------------------------
 // skip HAL`s interupt routine to get more performance
-
 extern "C" void TIM1_UP_TIM16_IRQHandler(void)
 {
-    __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_UPDATE);
-    Application::multiplexingTimerUpdate();
-}
-
-//--------------------------------------------------------------------------------------------------
-extern "C" void TIM1_CC_IRQHandler(void)
-{
-    if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_CC1) == SET)
+    if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_UPDATE) == SET)
     {
-        if (__HAL_TIM_GET_IT_SOURCE(Application::MultiplexingPwmTimer, TIM_IT_CC1) == SET)
-        {
-            __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_CC1);
-            Application::pwmTimerCompare();
-        }
+        __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_UPDATE);
+        Application::multiplexingTimerUpdate();
+    }
+    else if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_CC1) == SET)
+    {
+        __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_CC1);
+        Application::pwmTimerCompare();
     }
 }
 
