@@ -65,8 +65,8 @@ void Error_Handler(void);
 #define ButtonRight_GPIO_Port GPIOC
 #define enableESPBuckConverter_Pin GPIO_PIN_0
 #define enableESPBuckConverter_GPIO_Port GPIOH
-#define VibrationCushion_Pin GPIO_PIN_1
-#define VibrationCushion_GPIO_Port GPIOH
+#define ButtonSnooze_Pin GPIO_PIN_1
+#define ButtonSnooze_GPIO_Port GPIOH
 #define LDR_ADC_Pin GPIO_PIN_0
 #define LDR_ADC_GPIO_Port GPIOA
 #define Alarm2_LED_Pin GPIO_PIN_1
@@ -81,8 +81,8 @@ void Error_Handler(void);
 #define Alarm1_LED_GPIO_Port GPIOA
 #define BatteryADC_Pin GPIO_PIN_6
 #define BatteryADC_GPIO_Port GPIOA
-#define ButtonSnooze_Pin GPIO_PIN_7
-#define ButtonSnooze_GPIO_Port GPIOA
+#define VibrationCushion_Pin GPIO_PIN_7
+#define VibrationCushion_GPIO_Port GPIOA
 #define ButtonBrightnessPlus_Pin GPIO_PIN_0
 #define ButtonBrightnessPlus_GPIO_Port GPIOB
 #define ButtonBrightnessMinus_Pin GPIO_PIN_1

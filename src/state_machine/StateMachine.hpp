@@ -69,7 +69,7 @@ private:
 
     Time timeToModify;
 
-    util::Gpio vibrationCushion{VibrationCushion_GPIO_Port, VibrationCushion_Pin};
+    // util::Gpio vibrationCushion{VibrationCushion_GPIO_Port, VibrationCushion_Pin};
 
     // for test routine
     bool prevLedState = false;

@@ -32,8 +32,14 @@
 
 /* USER CODE END 1 */
 
-/** Configure pins
-     PA7   ------> TIM1_CH1N
+/** Configure pins as
+        * Analog
+        * Input
+        * Output
+        * EVENT_OUT
+        * EXTI
+        * Free pins are configured automatically as Analog (this feature is enabled through
+        * the Code Generation settings)
 */
 void MX_GPIO_Init(void)
 {
@@ -47,7 +53,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOH, enableESPBuckConverter_Pin|VibrationCushion_Pin|enableBatteryVoltageDivider_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOH, enableESPBuckConverter_Pin|enableBatteryVoltageDivider_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, enableHeatwire_Pin|ShiftRegisterClock_Pin|Strobe_Pin|enableGrid0_Pin
@@ -69,8 +75,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : enableESPBuckConverter_Pin VibrationCushion_Pin enableBatteryVoltageDivider_Pin */
-  GPIO_InitStruct.Pin = enableESPBuckConverter_Pin|VibrationCushion_Pin|enableBatteryVoltageDivider_Pin;
+  /*Configure GPIO pins : enableESPBuckConverter_Pin enableBatteryVoltageDivider_Pin */
+  GPIO_InitStruct.Pin = enableESPBuckConverter_Pin|enableBatteryVoltageDivider_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -81,14 +87,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(ButtonSnooze_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : VibrationCushion_Pin */
-  GPIO_InitStruct.Pin = VibrationCushion_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
-  HAL_GPIO_Init(VibrationCushion_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ButtonBrightnessPlus_Pin ButtonBrightnessMinus_Pin ButtonCCTPlus_Pin ButtonCCTMinus_Pin */
   GPIO_InitStruct.Pin = ButtonBrightnessPlus_Pin|ButtonBrightnessMinus_Pin|ButtonCCTPlus_Pin|ButtonCCTMinus_Pin;

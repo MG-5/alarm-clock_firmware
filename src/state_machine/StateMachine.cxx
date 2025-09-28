@@ -29,7 +29,7 @@ void StateMachine::taskMain(void *)
                 isLedStripOn = true;
             }
 
-            vibrationCushion.write(rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration);
+            // vibrationCushion.write(rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration);
 
             showClockWithBlinkingAlarm();
             // ToDo: sunrise fading
@@ -197,7 +197,7 @@ void StateMachine::processDisplayState()
         prevBrightness = ledStrip.getGlobalBrightness();
         ledStrip.setColorTemperature(LedStrip::NeutralColorTemperature, false);
         ledStrip.setGlobalBrightness(100, false);
-        vibrationCushion.write(true);
+        // vibrationCushion.write(true);
 
         delayUntilEventOrTimeout(2.0_s);
 
@@ -218,10 +218,10 @@ void StateMachine::displayLedInitialization()
     display.showInitialization();
     statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Orange);
     statusLeds.turnAllOn();
-    vibrationCushion.write(true);
+    // vibrationCushion.write(true);
     vTaskDelay(toOsTicks(1.0_s));
     statusLeds.turnAllOff();
-    vibrationCushion.write(false);
+    // vibrationCushion.write(false);
 
     display.enableDisplay(); // start multiplexing
 }
@@ -371,7 +371,7 @@ void StateMachine::abortTest()
 
     if (!prevLedState)
         ledStrip.turnOffImmediately();
-    vibrationCushion.write(false);
+    // vibrationCushion.write(false);
     statusLeds.turnAllOff();
     updateDisplayState(DisplayState::Clock);
 }

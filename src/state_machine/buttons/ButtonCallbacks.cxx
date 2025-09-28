@@ -135,7 +135,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         {
             rtc.setAlarmState(RealTimeClock::AlarmState::Off);
-            vibrationCushion.write(false);
+            // vibrationCushion.write(false);
             initialAlarm = true;
             revokeDisplayDelay();
             return;
