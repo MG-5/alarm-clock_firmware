@@ -63,39 +63,39 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, ShiftRegisterData_Pin|enableGrid5_Pin|enableGrid4_Pin|enableGrid3_Pin
                           |enableGrid2_Pin|enableGrid1_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PtPin */
+  /*Configure GPIO pin : RTC_INT_Pin */
   GPIO_InitStruct.Pin = RTC_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(RTC_INT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PCPin PCPin */
+  /*Configure GPIO pins : ButtonLeft_Pin ButtonRight_Pin */
   GPIO_InitStruct.Pin = ButtonLeft_Pin|ButtonRight_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PHPin PHPin PHPin */
+  /*Configure GPIO pins : enableESPBuckConverter_Pin VibrationCushion_Pin enableBatteryVoltageDivider_Pin */
   GPIO_InitStruct.Pin = enableESPBuckConverter_Pin|VibrationCushion_Pin|enableBatteryVoltageDivider_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PtPin */
+  /*Configure GPIO pin : ButtonSnooze_Pin */
   GPIO_InitStruct.Pin = ButtonSnooze_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(ButtonSnooze_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PBPin PBPin PBPin PBPin */
+  /*Configure GPIO pins : ButtonBrightnessPlus_Pin ButtonBrightnessMinus_Pin ButtonCCTPlus_Pin ButtonCCTMinus_Pin */
   GPIO_InitStruct.Pin = ButtonBrightnessPlus_Pin|ButtonBrightnessMinus_Pin|ButtonCCTPlus_Pin|ButtonCCTMinus_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PBPin PBPin PBPin PBPin
-                           PBPin */
+  /*Configure GPIO pins : enableHeatwire_Pin ShiftRegisterClock_Pin Strobe_Pin enableGrid0_Pin
+                           enable35V_Pin */
   GPIO_InitStruct.Pin = enableHeatwire_Pin|ShiftRegisterClock_Pin|Strobe_Pin|enableGrid0_Pin
                           |enable35V_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -103,8 +103,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PAPin PAPin PAPin PAPin
-                           PAPin PAPin */
+  /*Configure GPIO pins : ShiftRegisterData_Pin enableGrid5_Pin enableGrid4_Pin enableGrid3_Pin
+                           enableGrid2_Pin enableGrid1_Pin */
   GPIO_InitStruct.Pin = ShiftRegisterData_Pin|enableGrid5_Pin|enableGrid4_Pin|enableGrid3_Pin
                           |enableGrid2_Pin|enableGrid1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
