@@ -58,7 +58,7 @@ private:
 
     Buttons buttons{};
 
-    DisplayState displayState = DisplayState::Clock;
+    DisplayState displayState = DisplayState::ClockWithAlarmLeds;
     DisplayState previousDisplayState = DisplayState::Standby;
     bool blink = true;
     size_t secondsCounter = 0;
@@ -69,8 +69,15 @@ private:
 
     Time timeToModify;
 
+    util::Gpio vibrationCushion{VibrationCushion_GPIO_Port, VibrationCushion_Pin};
+
+    // for test routine
+    bool prevLedState = false;
+    units::si::Temperature prevColor = LedStrip::NeutralColorTemperature;
+    uint8_t prevBrightness = 50;
+
     void showClockWithBlinkingAlarm();
-    void evaluateDisplayState();
+    void processDisplayState();
     void checkIfGoToStandby();
 
     void displayLedInitialization();
@@ -88,6 +95,7 @@ private:
     void savePreviousState();
     void restorePreviousState();
     void goToDefaultState();
+    void abortTest();
 
     void assignButtonCallbacks();
 

@@ -92,8 +92,10 @@ void Display::strobePeriod()
 }
 
 //-----------------------------------------------------------------
-void Display::sendSegmentBits(uint32_t bits, bool forceLatch, bool enableDots, bool enableUpperBar, bool enableLowerBar)
+void Display::sendSegmentBits(uint16_t segments, bool forceLatch, bool enableDots, bool enableUpperBar,
+                              bool enableLowerBar)
 {
+    uint32_t bits = segments;
     bits <<= 3; // shift bits to make place for N (upperBar), O_DP (dots) and P_MIN_SEC (lowerBar)
     bits |= ((enableUpperBar & 1) << 2) | ((enableDots & 1) << 1) | (enableLowerBar & 1);
 

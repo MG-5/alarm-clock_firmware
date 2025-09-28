@@ -20,6 +20,10 @@ private:
     } currentLedState = State::Off;
 
 public:
+    static constexpr auto WarmColorTemperature = 2700.0_K;
+    static constexpr auto ColdColorTemperature = 6000.0_K;
+    static constexpr auto NeutralColorTemperature = 4200.0_K; // color mixed by warm and cold white with equal intensity
+
     LedStrip(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &warmWhiteChannel, const uint32_t &coldWhiteChannel)
         : TaskWithMemberFunctionBase("ledstripTask", 256, osPriorityLow2), ledTimerHandle(ledTimerHandle), //
           warmWhiteChannel(warmWhiteChannel),                                                              //
@@ -123,9 +127,6 @@ private:
     const uint32_t &warmWhiteChannel;
     const uint32_t &coldWhiteChannel;
 
-    static constexpr auto WarmColorTemperature = 2700.0_K;
-    static constexpr auto ColdColorTemperature = 6000.0_K;
-    static constexpr auto NeutralColorTemperature = 4200.0_K; // color mixed by warm and cold white with equal intensity
     static constexpr auto ColorStep = 100.0_K;
     units::si::Temperature colorTemperature{NeutralColorTemperature};
 

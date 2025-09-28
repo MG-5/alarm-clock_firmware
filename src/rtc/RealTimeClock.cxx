@@ -12,7 +12,7 @@ void RealTimeClock::taskMain(void *)
     {
         // load current time every second
         fetchClockTime();
-        checkIfAlarmShouldTrigger();
+        determineAlarmTriggerState();
 
         vTaskDelayUntil(&lastWakeTime, toOsTicks(1.0_s));
     }
@@ -28,7 +28,7 @@ void RealTimeClock::setupRtcAndAlarms()
 
         if (!isRtcOnline())
         {
-            vTaskDelay(toOsTicks(1.0_s));
+            vTaskDelay(toOsTicks(250.0_ms));
             continue;
         }
 
@@ -71,32 +71,59 @@ void RealTimeClock::fetchClockTime()
 }
 
 //--------------------------------------------------------------------------------------------------
-void RealTimeClock::checkIfAlarmShouldTrigger()
+void RealTimeClock::determineAlarmTriggerState()
 {
-    if (alarmState != AlarmState::Off)
+    if (alarmMode == AlarmMode::Off)
         return;
 
-    // lambda function to check if give alarm time matchs current time
+    // lambda function to check if given alarm time matchs current time
     auto checkAlarm = [this](Time &&alarmTime)
     { return clockTime.hour == alarmTime.hour && clockTime.minute == alarmTime.minute; };
 
-    static const Time HalfHourBeforeAlarm{"00:30"};
-    bool alarm1Triggered = checkAlarm(alarmTime1 - HalfHourBeforeAlarm) &&
-                           (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
+    // half hour before alarm time to trigger sunrise
+    static const Time HalfHour{"00:30"};
+    bool isAlarm1SunriseTriggered =
+        checkAlarm(alarmTime1 - HalfHour) && (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
 
-    bool alarm2Triggered = checkAlarm(alarmTime2 - HalfHourBeforeAlarm) &&
-                           (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
+    bool isAlarm2SunriseTriggered =
+        checkAlarm(alarmTime2 - HalfHour) && (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
 
-    if (alarm1Triggered || alarm2Triggered)
+    // only trigger sunrise if alarm is off and not already triggered
+    if (alarmState == AlarmState::Off && (isAlarm1SunriseTriggered || isAlarm2SunriseTriggered))
     {
-        if (isAlarmAlreadyTriggered)
-            return;
-
-        isAlarmAlreadyTriggered = true;
         alarmState = AlarmState::Sunrise;
+        return;
     }
-    else
-        isAlarmAlreadyTriggered = false;
+
+    // alarm time to trigger vibration
+    bool isAlarm1VibrationTriggered =
+        checkAlarm(std::move(alarmTime1)) && (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
+
+    bool isAlarm2VibrationTriggered =
+        checkAlarm(std::move(alarmTime2)) && (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
+
+    // only trigger vibration if sunrise is running
+    if (alarmState == AlarmState::Sunrise && (isAlarm1VibrationTriggered || isAlarm2VibrationTriggered))
+    {
+        alarmState = AlarmState::Vibration;
+        return;
+    }
+
+    if (alarmState != AlarmState::Snooze)
+        return;
+
+    constexpr auto SnoozeTime = 5;
+
+    bool isAlarm1SnoozeTriggered = (clockTime != alarmTime1) &&
+                                   (Time::getDifferenceInMinutes(clockTime, alarmTime1) % SnoozeTime == 0) &&
+                                   (alarmMode == AlarmMode::Alarm1 || alarmMode == AlarmMode::Both);
+
+    bool isAlarm2SnoozeTriggered = (clockTime != alarmTime2) &&
+                                   (Time::getDifferenceInMinutes(clockTime, alarmTime2) % SnoozeTime == 0) &&
+                                   (alarmMode == AlarmMode::Alarm2 || alarmMode == AlarmMode::Both);
+
+    if (isAlarm1SnoozeTriggered || isAlarm2SnoozeTriggered)
+        alarmState = AlarmState::Vibration;
 }
 
 //--------------------------------------------------------------------------------------------------

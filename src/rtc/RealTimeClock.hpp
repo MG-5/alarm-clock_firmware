@@ -73,10 +73,8 @@ private:
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
 
-    bool isAlarmAlreadyTriggered = false;
-
     void setupRtcAndAlarms();
     void fetchClockTime();
-    void checkIfAlarmShouldTrigger();
+    void determineAlarmTriggerState();
     void initRTC();
 };

@@ -11,7 +11,7 @@ class Display
 public:
     Display(DisplayDimming &dimming) : dimming(dimming) {};
 
-    // APP = 80MHz -> 1MHz = 1µs -> prescaler 80-1
+    // APB = 80MHz -> 1MHz = 1µs -> prescaler 80-1
     // auto reload period = 249 -> interrupt every 250µs
     static constexpr auto MultiplexingStepPeriod = 250.0_us;
 
@@ -27,10 +27,11 @@ public:
     void clearGridDataArray();
 
     static constexpr auto NumberOfGrids = 6;
+    static constexpr auto NumberBitsInShiftRegister = 17;
 
     struct GridData
     {
-        uint32_t segments = 0;
+        uint16_t segments = 0;
         bool enableDots = false;
         bool enableUpperBar = false;
         bool enableLowerBar = false;
@@ -50,9 +51,6 @@ private:
     util::Gpio heatwire{enableHeatwire_GPIO_Port, enableHeatwire_Pin};
     util::Gpio boostConverter{enable35V_GPIO_Port, enable35V_Pin};
 
-    // shift register
-    static constexpr auto NumberBitsInShiftRegister = 17;
-
     util::Gpio shiftRegisterData{ShiftRegisterData_GPIO_Port, ShiftRegisterData_Pin};
     util::Gpio shiftRegisterClock{ShiftRegisterClock_GPIO_Port, ShiftRegisterClock_Pin};
     util::Gpio shiftRegisterStrobe{Strobe_GPIO_Port, Strobe_Pin};
@@ -66,7 +64,7 @@ private:
 
     void clockPeriod();
     void strobePeriod();
-    void sendSegmentBits(uint32_t bits, bool forceLatch = true, bool enableDots = false, bool enableUpperBar = false,
+    void sendSegmentBits(uint16_t bits, bool forceLatch = true, bool enableDots = false, bool enableUpperBar = false,
                          bool enableLowerBar = false);
 
     void disableAllGrids();

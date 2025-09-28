@@ -135,6 +135,7 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
         if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         {
             rtc.setAlarmState(RealTimeClock::AlarmState::Off);
+            vibrationCushion.write(false);
             initialAlarm = true;
             revokeDisplayDelay();
             return;
@@ -219,6 +220,9 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
     case util::Button::Action::LongPress:
         if (isInChangeScreen())
             setTimeoutAndStart(250.0_ms);
+
+        else
+            updateDisplayState(DisplayState::Test);
         break;
 
     case util::Button::Action::SuperLongPress:
@@ -268,7 +272,7 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
             break;
 
         case DisplayState::Test:
-            // ToDo: abort test
+            abortTest();
             [[fallthrough]];
         case DisplayState::Standby:
         default:
@@ -412,7 +416,7 @@ void StateMachine::handlePlusMinusButtons(util::Button::Action action, bool isPl
             switchToLedChangeScreen(isBrightness ? DisplayState::LedBrightness : DisplayState::LedCCT);
 
         isIncrementing = isPlus;
-        setTimeoutAndStart(250.0_ms);
+        setTimeoutAndStart(150.0_ms);
         break;
 
     case util::Button::Action::StopLongPress:

@@ -40,6 +40,7 @@ protected:
     {
         auto lastWakeTime = xTaskGetTickCount();
         updateBrightness();
+        turnAllOff();
 
         while (true)
         {

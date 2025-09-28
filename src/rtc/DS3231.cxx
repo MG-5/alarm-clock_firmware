@@ -1,7 +1,5 @@
 #include "DS3231.hpp"
 
-static const uint8_t dim[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
 using namespace ds3231;
 
 //--------------------------------------------------------------------------------------------------
@@ -72,8 +70,8 @@ bool DS3231::setHour(uint8_t hour)
 //--------------------------------------------------------------------------------------------------
 bool DS3231::setDate(uint8_t day, uint8_t month, uint16_t year)
 {
-    bool areParametersInRange = ((day >= 1) && (day <= 31)) && ((month >= 1) && (month <= 12)) &&
-                                ((year >= 2000) && (year < 2100));
+    bool areParametersInRange =
+        ((day >= 1) && (day <= 31)) && ((month >= 1) && (month <= 12)) && ((year >= 2000) && (year < 2100));
 
     if (!areParametersInRange)
         return false;
@@ -113,8 +111,7 @@ bool DS3231::setAlarm1(const Time &newAlarmTime)
     };
 
     accessor.beginTransaction(SlaveAddress);
-    bool wasSuccessful =
-        accessor.writeToRegister(Register::Alarm1_Seconds, dataToWrite, NumberOfBytes);
+    bool wasSuccessful = accessor.writeToRegister(Register::Alarm1_Seconds, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
 
     return wasSuccessful;
@@ -127,8 +124,7 @@ std::optional<Time> DS3231::getAlarm1()
     uint8_t data[NumberOfBytes]{0}; // second, minute, hour
 
     accessor.beginTransaction(SlaveAddress);
-    bool transactionResult =
-        accessor.readFromRegister(Register::Alarm1_Seconds, data, NumberOfBytes);
+    bool transactionResult = accessor.readFromRegister(Register::Alarm1_Seconds, data, NumberOfBytes);
     accessor.endTransaction();
 
     if (transactionResult)
@@ -166,8 +162,7 @@ bool DS3231::setAlarm2(const Time &newAlarmTime)
     };
 
     accessor.beginTransaction(SlaveAddress);
-    bool wasSuccessful =
-        accessor.writeToRegister(Register::Alarm2_Minutes, dataToWrite, NumberOfBytes);
+    bool wasSuccessful = accessor.writeToRegister(Register::Alarm2_Minutes, dataToWrite, NumberOfBytes);
     accessor.endTransaction();
 
     return wasSuccessful;
@@ -180,8 +175,7 @@ std::optional<Time> DS3231::getAlarm2()
     uint8_t data[NumberOfBytes]{0}; // minute, hour
 
     accessor.beginTransaction(SlaveAddress);
-    bool transactionResult =
-        accessor.readFromRegister(Register::Alarm2_Minutes, data, NumberOfBytes);
+    bool transactionResult = accessor.readFromRegister(Register::Alarm2_Minutes, data, NumberOfBytes);
     accessor.endTransaction();
 
     if (transactionResult)
@@ -252,8 +246,7 @@ std::optional<float> DS3231::getTemperature()
     uint8_t data[NumberOfBytes];
 
     accessor.beginTransaction(SlaveAddress);
-    bool transactionResult =
-        accessor.readFromRegister(Register::MSBTemperature, data, NumberOfBytes);
+    bool transactionResult = accessor.readFromRegister(Register::MSBTemperature, data, NumberOfBytes);
     accessor.endTransaction();
 
     if (!transactionResult)

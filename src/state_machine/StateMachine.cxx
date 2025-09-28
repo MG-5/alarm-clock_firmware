@@ -26,16 +26,21 @@ void StateMachine::taskMain(void *)
                 alarmStateCounter = 0;
                 updateDisplayState(DisplayState::Clock); // also wake up display
                 ledStrip.turnOnWithFade();
+                isLedStripOn = true;
             }
 
+            vibrationCushion.write(rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration);
+
             showClockWithBlinkingAlarm();
-            // ToDo: transition sunrise -> vibration -snooze - off
+            // ToDo: sunrise fading
+            // ToDo: control vibration
+            // ToDo: turn off alarm after 2 min no reaction
             delayUntilEventOrTimeout(1.0_s);
-            continue; // bypass displayState evaluation
+            continue; // bypass displayState processing
         }
 
         checkIfGoToStandby();
-        evaluateDisplayState();
+        processDisplayState();
     }
 };
 
@@ -73,7 +78,7 @@ void StateMachine::checkIfGoToStandby()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::evaluateDisplayState()
+void StateMachine::processDisplayState()
 {
     switch (displayState)
     {
@@ -176,6 +181,30 @@ void StateMachine::evaluateDisplayState()
             restorePreviousState();
         break;
 
+    case DisplayState::Test:
+    {
+        for (size_t i = 0; i < display.getGridDataArray().size(); i++)
+        {
+            display.getGridDataArray()[i].segments = 0b11111111111111; // 15 segments
+            display.getGridDataArray()[i].enableDots = true;
+            display.getGridDataArray()[i].enableUpperBar = true;
+            display.getGridDataArray()[i].enableLowerBar = true;
+        }
+        statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Yellow);
+        statusLeds.turnAllOn();
+        prevLedState = isLedStripOn;
+        prevColor = ledStrip.getColorTemperature();
+        prevBrightness = ledStrip.getGlobalBrightness();
+        ledStrip.setColorTemperature(LedStrip::NeutralColorTemperature, false);
+        ledStrip.setGlobalBrightness(100, false);
+        vibrationCushion.write(true);
+
+        delayUntilEventOrTimeout(2.0_s);
+
+        abortTest();
+    }
+    break;
+
     default:
         break;
     }
@@ -184,13 +213,15 @@ void StateMachine::evaluateDisplayState()
 //-----------------------------------------------------------------
 void StateMachine::displayLedInitialization()
 {
+    statusLeds.turnAllOff();
     display.setup();
-
     display.showInitialization();
     statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Orange);
     statusLeds.turnAllOn();
+    vibrationCushion.write(true);
     vTaskDelay(toOsTicks(1.0_s));
     statusLeds.turnAllOff();
+    vibrationCushion.write(false);
 
     display.enableDisplay(); // start multiplexing
 }
@@ -289,13 +320,13 @@ void StateMachine::showCurrentCCT()
 //-----------------------------------------------------------------
 void StateMachine::updateDisplayState(DisplayState newState)
 {
-    if (displayState == DisplayState::Standby)
+    if (newState == DisplayState::Standby)
+        display.disableDisplay();
+
+    else if (displayState == DisplayState::Standby)
         display.enableDisplay();
 
     displayState = newState;
-
-    if (displayState == DisplayState::Standby)
-        display.disableDisplay();
 
     stopTimeoutTimer();
     revokeDisplayDelay();
@@ -330,6 +361,19 @@ void StateMachine::savePreviousState()
 void StateMachine::restorePreviousState()
 {
     updateDisplayState(previousDisplayState);
+}
+
+//-----------------------------------------------------------------
+void StateMachine::abortTest()
+{
+    ledStrip.setColorTemperature(prevColor, false);
+    ledStrip.setGlobalBrightness(prevBrightness, false);
+
+    if (!prevLedState)
+        ledStrip.turnOffImmediately();
+    vibrationCushion.write(false);
+    statusLeds.turnAllOff();
+    updateDisplayState(DisplayState::Clock);
 }
 
 //-----------------------------------------------------------------
