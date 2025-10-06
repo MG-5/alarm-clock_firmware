@@ -115,13 +115,13 @@ void Display::multiplexingInterrupt()
     if (++gridIndex >= NumberOfGrids)
         gridIndex = 0;
 
+    disableAllGrids();
+
     sendSegmentBits(gridDataArray[gridIndex].segments,       //
-                    false,                                   //
+                    true,                                    //
                     gridDataArray[gridIndex].enableDots,     //
                     gridDataArray[gridIndex].enableUpperBar, //
                     gridDataArray[gridIndex].enableLowerBar);
-    disableAllGrids();
-    strobePeriod();
 
     gridGpioArray[gridIndex].write(true);
 }
