@@ -221,13 +221,13 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
         if (isInChangeScreen())
             setTimeoutAndStart(250.0_ms);
 
-        else
+        else if (displayState != DisplayState::DisplayAlarm1 && displayState != DisplayState::DisplayAlarm2)
             updateDisplayState(DisplayState::Test);
         break;
 
     case util::Button::Action::SuperLongPress:
     {
-        if (displayState == DisplayState::Clock || displayState == DisplayState::ClockWithAlarmLeds)
+        if (displayState == DisplayState::DisplayAlarm1 || displayState == DisplayState::DisplayAlarm2)
         {
             blink = true;
             timeToModify = rtc.getClockTime();
