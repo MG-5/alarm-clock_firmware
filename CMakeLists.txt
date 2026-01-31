@@ -55,9 +55,6 @@ target_sources(
     src/rtc/DS3231.cxx
     src/rtc/RealTimeClock.cxx
 
-
-    src/state_machine/buttons/Buttons.cxx
-    src/state_machine/buttons/ButtonCallbacks.cxx
     src/state_machine/StateMachine.cxx
 
     src/Application.cxx

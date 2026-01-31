@@ -8,20 +8,20 @@ class StatusLeds : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
     StatusLeds(TIM_HandleTypeDef *ledTimerHandle, const uint32_t &ledAlarm1Channel, const uint32_t &ledAlarm2Channel,
-               const uint32_t &ledRedChannel, const uint32_t &ledGreenChannel, TimerCallbackFunction_t timeoutCallback)
+               const uint32_t &ledRedChannel, const uint32_t &ledGreenChannel)
         : TaskWithMemberFunctionBase("statusLedTask", 128, osPriorityLow2), ledTimerHandle(ledTimerHandle), //
           ledAlarm1Channel(ledAlarm1Channel),                                                               //
           ledAlarm2Channel(ledAlarm2Channel),                                                               //
           ledRedChannel(ledRedChannel),                                                                     //
-          ledGreenChannel(ledGreenChannel),                                                                 //
-          timeoutCallback(timeoutCallback)
+          ledGreenChannel(ledGreenChannel)
     {
         configASSERT(this->ledTimerHandle != nullptr);
     }
 
-    void handleTimeoutTimer()
+    static void timeoutCallback(TimerHandle_t timer)
     {
-        ledRedGreen.turnOff();
+        auto *statusLeds = static_cast<StatusLeds *>(pvTimerGetTimerID(timer));
+        statusLeds->ledRedGreen.turnOff();
     }
 
     void setGlobalBrightness(uint8_t newBrightness)
@@ -58,8 +58,8 @@ private:
     const uint32_t &ledRedChannel;
     const uint32_t &ledGreenChannel;
 
-    TimerCallbackFunction_t timeoutCallback = nullptr;
-    TimerHandle_t timeoutTimer{xTimerCreate("timeoutTimer", toOsTicks(2.0_s), pdFALSE, nullptr, timeoutCallback)};
+    TimerHandle_t timeoutTimer{
+        xTimerCreate("statusLedTimeout", toOsTicks(2.0_s), pdFALSE, this, &StatusLeds::timeoutCallback)};
 
 public:
     // APB1 for timers: 80MHz -> 1024 PWM steps and clock divison by 4 -> 19.5kHz PWM frequency
@@ -88,9 +88,14 @@ public:
 
     void turnAllOff()
     {
+        turnOffAlarmLeds();
+        ledRedGreen.turnOff();
+    }
+
+    void turnOffAlarmLeds()
+    {
         ledAlarm1.turnOff();
         ledAlarm2.turnOff();
-        ledRedGreen.turnOff();
     }
 
     void signalSuccess()

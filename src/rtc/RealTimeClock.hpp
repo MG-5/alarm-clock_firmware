@@ -42,7 +42,7 @@ public:
         alarmState = newState;
     }
 
-    AlarmState getAlarmState()
+    AlarmState getAlarmState() const
     {
         return alarmState;
     }
@@ -52,7 +52,7 @@ public:
         alarmMode = newMode;
     }
 
-    AlarmMode getAlarmMode()
+    AlarmMode getAlarmMode() const
     {
         return alarmMode;
     }

@@ -1,29 +1,36 @@
 #pragma once
 
 #include "State.hpp"
-#include "display/Display.hpp"
 
 /// State representing the standby mode
 class StandbyState : public State
 {
 public:
-    StandbyState(Display &display) : display(display)
-    {
-    }
+    StandbyState(SystemComponents &resources, StateEventCallback &stateEventCallback)
+        : State(resources, stateEventCallback) {};
 
     ~StandbyState() override = default;
 
+    //-----------------------------------------------------------------
     void onEnter() override
     {
-        display.disableDisplay();
+        systemComponents.display.disableDisplay();
     }
 
+    //-----------------------------------------------------------------
     void onExit() override
     {
-        display.enableDisplay();
+        systemComponents.display.enableDisplay();
     }
 
-    std::optional<StateId> update(units::si::Time timePassed) override;
+    //-----------------------------------------------------------------
+    void draw() override
+    {
+        // Nothing to draw in standby
+        setUpdateDelay(1.0_min);
+    }
+
+    //-----------------------------------------------------------------
     std::optional<StateId> onButtonEvent(Buttons::ButtonId buttonId, util ::Button::Action action) override
     {
         switch (buttonId)
@@ -43,7 +50,4 @@ public:
 
         return std::nullopt;
     }
-
-private:
-    Display &display;
 };

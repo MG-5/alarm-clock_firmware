@@ -1,6 +1,6 @@
 #include "../StateMachine.hpp"
 
-void StateMachine::handleTimeoutTimer()
+void OldStateMachine::handleTimeoutTimer()
 {
     switch (displayState)
     {
@@ -36,12 +36,12 @@ void StateMachine::handleTimeoutTimer()
         break;
     }
 
-    revokeDisplayDelay();
+    // revokeDisplayDelay();
 }
 
 //-----------------------------------------------------------------
 // LEFT
-void StateMachine::buttonLeftCallback(util::Button::Action action)
+void OldStateMachine::buttonLeftCallback(util::Button::Action action)
 {
     switch (action)
     {
@@ -49,60 +49,6 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
     {
         if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
             return;
-
-        switch (displayState)
-        {
-        case DisplayState::Clock:
-        case DisplayState::ClockWithAlarmLeds:
-            timeToModify = rtc.getAlarmTime1();
-            updateDisplayState(DisplayState::DisplayAlarm1);
-            break;
-
-        case DisplayState::DisplayAlarm1:
-            timeToModify = rtc.getAlarmTime2();
-            updateDisplayState(DisplayState::DisplayAlarm2);
-            break;
-
-        case DisplayState::DisplayAlarm2:
-            goToDefaultState();
-            break;
-
-        case DisplayState::ChangeAlarm1Hour:
-            updateDisplayState(DisplayState::ChangeAlarm1Minute);
-            break;
-
-        case DisplayState::ChangeAlarm1Minute:
-            signalResult(rtc.writeAlarmTime1(timeToModify));
-            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
-            updateDisplayState(DisplayState::DisplayAlarm1);
-            break;
-
-        case DisplayState::ChangeAlarm2Hour:
-            updateDisplayState(DisplayState::ChangeAlarm2Minute);
-            break;
-
-        case DisplayState::ChangeAlarm2Minute:
-            signalResult(rtc.writeAlarmTime2(timeToModify));
-            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
-            updateDisplayState(DisplayState::DisplayAlarm2);
-            break;
-
-        case DisplayState::ChangeClockHour:
-            updateDisplayState(DisplayState::ChangeClockMinute);
-            break;
-
-        case DisplayState::ChangeClockMinute:
-            signalResult(rtc.writeClockTime(timeToModify));
-            goToDefaultState();
-            break;
-
-        case DisplayState::Standby:
-            goToDefaultState();
-            break;
-
-        default:
-            break;
-        }
 
         blink = true;
     }
@@ -112,24 +58,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
     {
         if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
             return;
-
-        switch (displayState)
-        {
-        case DisplayState::DisplayAlarm1:
-            blink = true;
-            updateDisplayState(DisplayState::ChangeAlarm1Hour);
-            break;
-
-        case DisplayState::DisplayAlarm2:
-            blink = true;
-            updateDisplayState(DisplayState::ChangeAlarm2Hour);
-            break;
-
-        default:
-            break;
-        }
-        break;
     }
+    break;
     case util::Button::Action::SuperLongPress:
     {
         if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
@@ -137,19 +67,8 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
             rtc.setAlarmState(RealTimeClock::AlarmState::Off);
             // vibrationCushion.write(false);
             initialAlarm = true;
-            revokeDisplayDelay();
+            // revokeDisplayDelay();
             return;
-        }
-
-        switch (displayState)
-        {
-        case DisplayState::Clock:
-        case DisplayState::ClockWithAlarmLeds:
-            updateDisplayState(DisplayState::Standby);
-            break;
-
-        default:
-            break;
         }
         break;
     }
@@ -160,82 +79,20 @@ void StateMachine::buttonLeftCallback(util::Button::Action action)
 
 //-----------------------------------------------------------------
 // RIGHT
-void StateMachine::buttonRightCallback(util::Button::Action action)
+void OldStateMachine::buttonRightCallback(util::Button::Action action)
 {
     if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         return;
 
     switch (action)
     {
-    case util::Button::Action::ShortPress:
-    {
-        if (isInChangeScreen())
-        {
-            incrementNumber();
-            revokeDisplayDelay();
-            return;
-        }
-
-        switch (displayState)
-        {
-        case DisplayState::Clock:
-        case DisplayState::ClockWithAlarmLeds:
-            updateDisplayState(DisplayState::DisplayAlarmStatus);
-            break;
-
-        case DisplayState::DisplayAlarmStatus:
-        {
-            switch (rtc.getAlarmMode())
-            {
-            case RealTimeClock::AlarmMode::Off:
-                rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
-                break;
-
-            case RealTimeClock::AlarmMode::Alarm1:
-                rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
-                break;
-
-            case RealTimeClock::AlarmMode::Alarm2:
-                rtc.setAlarmMode(RealTimeClock::AlarmMode::Both);
-                break;
-
-            case RealTimeClock::AlarmMode::Both:
-                rtc.setAlarmMode(RealTimeClock::AlarmMode::Off);
-                break;
-            }
-            revokeDisplayDelay();
-        }
-        break;
-
-        case DisplayState::Standby:
-            goToDefaultState();
-            break;
-
-        default:
-            break;
-        }
-
-        break;
-    }
     case util::Button::Action::LongPress:
         if (isInChangeScreen())
             setTimeoutAndStart(250.0_ms);
 
         else if (displayState != DisplayState::DisplayAlarm1 && displayState != DisplayState::DisplayAlarm2)
-            updateDisplayState(DisplayState::Test);
-        break;
-
-    case util::Button::Action::SuperLongPress:
-    {
-        if (displayState == DisplayState::DisplayAlarm1 || displayState == DisplayState::DisplayAlarm2)
-        {
-            blink = true;
-            timeToModify = rtc.getClockTime();
-            timeToModify.second = 0;
-            updateDisplayState(DisplayState::ChangeClockHour);
-        }
-        break;
-    }
+            // updateDisplayState(DisplayState::Test);
+            break;
 
     case util::Button::Action::StopLongPress:
         if (isInChangeScreen())
@@ -245,14 +102,14 @@ void StateMachine::buttonRightCallback(util::Button::Action action)
 
 //-----------------------------------------------------------------
 // SNOOZE
-void StateMachine::buttonSnoozeCallback(util::Button::Action action)
+void OldStateMachine::buttonSnoozeCallback(util::Button::Action action)
 {
     if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
     {
         if (rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration)
         {
             rtc.setAlarmState(RealTimeClock::AlarmState::Snooze);
-            revokeDisplayDelay();
+            // revokeDisplayDelay();
         }
 
         return;
@@ -264,19 +121,11 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     {
         switch (displayState)
         {
-        case DisplayState::ChangeAlarm1Hour:
-        case DisplayState::ChangeAlarm2Hour:
-        case DisplayState::ChangeAlarm1Minute:
-        case DisplayState::ChangeAlarm2Minute:
-            // do nothing
-            break;
-
         case DisplayState::Test:
             abortTest();
             [[fallthrough]];
-        case DisplayState::Standby:
         default:
-            goToDefaultState();
+            // goToDefaultState();
             break;
         }
 
@@ -286,8 +135,6 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
     {
         isLedStripOn = !isLedStripOn;
         isLedStripOn ? ledStrip.turnOnWithFade() : ledStrip.turnOffWithFade();
-        if (displayState == DisplayState::Standby)
-            updateDisplayState(DisplayState::Clock);
         break;
     }
 
@@ -297,30 +144,30 @@ void StateMachine::buttonSnoozeCallback(util::Button::Action action)
 }
 
 //-----------------------------------------------------------------
-void StateMachine::buttonBrightnessPlusCallback(util::Button::Action action)
+void OldStateMachine::buttonBrightnessPlusCallback(util::Button::Action action)
 {
     handlePlusMinusButtons(action, true, true);
 }
 
 //-----------------------------------------------------------------
-void StateMachine::buttonBrightnessMinusCallback(util::Button::Action action)
+void OldStateMachine::buttonBrightnessMinusCallback(util::Button::Action action)
 {
     handlePlusMinusButtons(action, false, true);
 }
 
 //-----------------------------------------------------------------
-void StateMachine::buttonCCTPlusCallback(util::Button::Action action)
+void OldStateMachine::buttonCCTPlusCallback(util::Button::Action action)
 {
     handlePlusMinusButtons(action, true, false);
 }
 
 //-----------------------------------------------------------------
-void StateMachine::buttonCCTMinusCallback(util::Button::Action action)
+void OldStateMachine::buttonCCTMinusCallback(util::Button::Action action)
 {
     handlePlusMinusButtons(action, false, false);
 }
 //-----------------------------------------------------------------
-bool StateMachine::isInChangeScreen()
+bool OldStateMachine::isInChangeScreen()
 {
     return displayState == DisplayState::ChangeAlarm1Hour || displayState == DisplayState::ChangeAlarm2Hour ||
            displayState == DisplayState::ChangeClockHour || displayState == DisplayState::ChangeAlarm1Minute ||
@@ -328,7 +175,7 @@ bool StateMachine::isInChangeScreen()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::incrementNumber()
+void OldStateMachine::incrementNumber()
 {
     blink = false;
 
@@ -355,7 +202,7 @@ void StateMachine::incrementNumber()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::decrementNumber()
+void OldStateMachine::decrementNumber()
 {
     blink = false;
 
@@ -382,16 +229,17 @@ void StateMachine::decrementNumber()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::switchToLedChangeScreen(DisplayState newState)
+void OldStateMachine::switchToLedChangeScreen(DisplayState newState)
 {
     if (displayState != DisplayState::LedCCT && displayState != DisplayState::LedBrightness)
-        savePreviousState();
+    { // savePreviousState();
+    }
 
-    updateDisplayState(newState);
+    // updateDisplayState(newState);
 }
 
 //-----------------------------------------------------------------
-void StateMachine::handlePlusMinusButtons(util::Button::Action action, bool isPlus, bool isBrightness)
+void OldStateMachine::handlePlusMinusButtons(util::Button::Action action, bool isPlus, bool isBrightness)
 {
     if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
         return;
@@ -402,7 +250,7 @@ void StateMachine::handlePlusMinusButtons(util::Button::Action action, bool isPl
         if (isInChangeScreen())
         {
             isPlus ? incrementNumber() : decrementNumber();
-            revokeDisplayDelay();
+            // revokeDisplayDelay();
             return;
         }
 

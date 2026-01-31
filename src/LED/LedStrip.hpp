@@ -10,16 +10,15 @@
 
 class LedStrip : public util::wrappers::TaskWithMemberFunctionBase
 {
-private:
+public:
     enum class State
     {
         Off,
         On,
         FadingOff,
         FadingOn
-    } currentLedState = State::Off;
+    };
 
-public:
     static constexpr auto WarmColorTemperature = 2700.0_K;
     static constexpr auto ColdColorTemperature = 6000.0_K;
     static constexpr auto NeutralColorTemperature = 4200.0_K; // color mixed by warm and cold white with equal intensity
@@ -106,6 +105,11 @@ public:
         return colorTemperature;
     }
 
+    State getState() const
+    {
+        return currentLedState;
+    }
+
 protected:
     [[noreturn]] void taskMain(void *)
     {
@@ -117,6 +121,10 @@ protected:
             coldWhiteLedStrip.updateState(lastWakeTime);
 
             bool areStripsFading = warmWhiteLedStrip.isFading() || coldWhiteLedStrip.isFading();
+
+            if (!areStripsFading && (currentLedState == State::FadingOn || currentLedState == State::FadingOff))
+                currentLedState = (currentLedState == State::FadingOn) ? State::On : State::Off;
+
             constexpr auto MinimumDelayTime = 1.0_ms / (static_cast<float>(configTICK_RATE_HZ) / 1000);
             vTaskDelayUntil(&lastWakeTime, toOsTicks(areStripsFading ? MinimumDelayTime : 20.0_ms));
         }
@@ -126,6 +134,8 @@ private:
     TIM_HandleTypeDef *ledTimerHandle = nullptr;
     const uint32_t &warmWhiteChannel;
     const uint32_t &coldWhiteChannel;
+
+    State currentLedState = State::Off;
 
     static constexpr auto ColorStep = 100.0_K;
     units::si::Temperature colorTemperature{NeutralColorTemperature};
@@ -181,6 +191,8 @@ private:
     {
         warmWhiteLedStrip.setLightLevel(state ? (calculateWarmWhiteLevel() * globalBrightness) / 100 : 0);
         coldWhiteLedStrip.setLightLevel(state ? (calculateColdWhiteLevel() * globalBrightness) / 100 : 0);
+
+        currentLedState = state ? State::On : State::Off;
     }
 
     // -----------------------------------------------------------------------------------------------
@@ -188,5 +200,7 @@ private:
     {
         warmWhiteLedStrip.fadeLightLevelTo(state ? (calculateWarmWhiteLevel() * globalBrightness) / 100 : 0);
         coldWhiteLedStrip.fadeLightLevelTo(state ? (calculateColdWhiteLevel() * globalBrightness) / 100 : 0);
+
+        currentLedState = state ? State::FadingOn : State::FadingOff;
     }
 };

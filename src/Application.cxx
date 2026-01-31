@@ -88,15 +88,3 @@ extern "C" void TIM1_UP_TIM16_IRQHandler(void)
         Application::pwmTimerCompare();
     }
 }
-
-//--------------------------------------------------------------------------------------------------
-void Application::statusLedsTimeoutCallback(TimerHandle_t timer)
-{
-    getApplicationInstance().statusLeds.handleTimeoutTimer();
-}
-
-//--------------------------------------------------------------------------------------------------
-void Application::stateMachineTimeoutCallback(TimerHandle_t timer)
-{
-    getApplicationInstance().stateMachine.handleTimeoutTimer();
-}

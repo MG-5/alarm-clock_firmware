@@ -1,157 +1,90 @@
 #pragma once
 
-#include "LED/LedStrip.hpp"
-#include "LED/StatusLeds.hpp"
-#include "buttons/Buttons.hpp"
-#include "display/Display.hpp"
-#include "rtc/RealTimeClock.hpp"
-
-#include "util/gpio.hpp"
-#include "wrappers/Task.hpp"
-
 #include <climits>
+
+#include "states/ChangeLEDState.hpp"
+#include "states/ChangeTimeState.hpp"
+#include "states/ClockState.hpp"
+#include "states/ShowAlarmTimesState.hpp"
+#include "states/ShowCurrentAlarmMode.hpp"
+#include "states/StandbyState.hpp"
+#include "states/TestState.hpp"
+
+#include "display/Display.hpp"
+#include "sync.hpp"
 
 class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(Display &display, StatusLeds &statusLeds, LedStrip &ledStrip, RealTimeClock &rtc,
-                 TimerCallbackFunction_t timeoutCallback)
-        : TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityBelowNormal4), //
-          display(display),                                                            //
-          statusLeds(statusLeds),                                                      //
-          ledStrip(ledStrip),                                                          //
-          rtc(rtc),                                                                    //
-          timeoutCallback(timeoutCallback)
+    StateMachine(SystemComponents &systemComponents)
+        : util::wrappers::TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityBelowNormal4), //
+          systemComponents(systemComponents)
     {
         assignButtonCallbacks();
     }
 
-    enum class DisplayState
-    {
-        Standby,
-        Clock,
-        ClockWithAlarmLeds,
-        DisplayAlarm1,
-        DisplayAlarm2,
-        ChangeAlarm1Hour,
-        ChangeAlarm1Minute,
-        ChangeAlarm2Hour,
-        ChangeAlarm2Minute,
-        ChangeClockHour,
-        ChangeClockMinute,
-        DisplayAlarmStatus,
-        LedBrightness,
-        LedCCT,
-        Test
-    };
+    ~StateMachine() = default;
 
-    void handleTimeoutTimer();
+    void requestRedraw()
+    {
+        shouldRedraw = true;
+    }
+
+    void requestStateChange(StateId newStateId)
+    {
+        currentStateId = newStateId;
+        stateChanged = true;
+
+        abortDelayWaiting();
+    }
+
+    void handleStateEvent(StateEvent event, std::optional<StateId> targetState);
 
 protected:
-    void taskMain(void *) override;
+    void taskMain(void *parameters) override;
 
 private:
-    Display &display;
-    StatusLeds &statusLeds;
-    LedStrip &ledStrip;
-    RealTimeClock &rtc;
+    SystemComponents &systemComponents;
+
+    StateEventCallback stateEventCallback{
+        std::bind(&StateMachine::handleStateEvent, this, std::placeholders::_1, std::placeholders::_2)};
+
+    StandbyState standbyState{systemComponents, stateEventCallback};
+    ClockState clockState{systemComponents, stateEventCallback};
+    ShowAlarmTimesState alarmTimesState{systemComponents, stateEventCallback};
+    ChangeTimeState changeTimeState{systemComponents, ChangeTimeState::TimeToModify::Clock, stateEventCallback};
+    ChangeTimeState changeAlarm1State{systemComponents, ChangeTimeState::TimeToModify::Alarm1, stateEventCallback};
+    ChangeTimeState changeAlarm2State{systemComponents, ChangeTimeState::TimeToModify::Alarm2, stateEventCallback};
+    ShowCurrentAlarmMode showCurrentAlarmMode{systemComponents, stateEventCallback};
+    ChangeLEDState changeLEDState{systemComponents, stateEventCallback};
+    TestState testState{systemComponents, stateEventCallback};
+
+    State *currentState = &clockState;
+    StateId currentStateId = StateId::Clock;
+    bool stateChanged = false;
+    bool shouldRedraw = false;
 
     Buttons buttons{};
 
-    DisplayState displayState = DisplayState::ClockWithAlarmLeds;
-    DisplayState previousDisplayState = DisplayState::Standby;
-    bool blink = true;
-    size_t secondsCounter = 0;
     bool isLedStripOn = false;
 
-    bool initialAlarm = true;
-    size_t alarmStateCounter = 0;
+    State *getStateFromId(StateId stateId);
 
-    Time timeToModify;
-
-    // util::Gpio vibrationCushion{VibrationCushion_GPIO_Port, VibrationCushion_Pin};
-
-    // for test routine
-    bool prevLedState = false;
-    units::si::Temperature prevColor = LedStrip::NeutralColorTemperature;
-    uint8_t prevBrightness = 50;
-
-    void showClockWithBlinkingAlarm();
-    void processDisplayState();
-    void checkIfGoToStandby();
-
-    void displayLedInitialization();
-    void waitForRtc();
-
-    void showHourChanging();
-    void showMinuteChanging();
-    void showCurrentAlarmMode();
-    void showCurrentBrightness();
-    void showCurrentCCT();
-
-    void updateDisplayState(DisplayState newState);
-    void signalResult(bool success);
-    void revokeDisplayDelay();
-    void savePreviousState();
-    void restorePreviousState();
-    void goToDefaultState();
-    void abortTest();
+    void commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action);
 
     void assignButtonCallbacks();
 
-    void buttonLeftCallback(util::Button::Action action);
-    void buttonRightCallback(util::Button::Action action);
-    void buttonSnoozeCallback(util::Button::Action action);
-    void buttonBrightnessPlusCallback(util::Button::Action action);
-    void buttonBrightnessMinusCallback(util::Button::Action action);
-    void buttonCCTPlusCallback(util::Button::Action action);
-    void buttonCCTMinusCallback(util::Button::Action action);
-
-    bool isInChangeScreen();
-    void incrementNumber();
-    void decrementNumber();
-
-    void switchToLedChangeScreen(DisplayState newState);
-    void handlePlusMinusButtons(util::Button::Action action, bool isIncrementing, bool isBrightness);
-    bool isIncrementing = true;
-
-    TimerCallbackFunction_t timeoutCallback = nullptr;
-
-    // with enabled auto reload
-    TimerHandle_t timeoutTimer{xTimerCreate("timeoutTimer", toOsTicks(4.0_s), pdTRUE, nullptr, timeoutCallback)};
-
-    void setTimeoutAndStart(units::si::Time period)
-    {
-        setTimeoutTimerPeriod(period);
-        resetTimeoutTimer();
-    }
-
-    void setTimeoutTimerPeriod(units::si::Time period)
-    {
-        xTimerChangePeriod(timeoutTimer, toOsTicks(period), 0);
-    }
-
-    void startTimeoutTimer()
-    {
-        if (xTimerIsTimerActive(timeoutTimer) == pdFALSE)
-            xTimerStart(timeoutTimer, 0);
-    }
-
-    void stopTimeoutTimer()
-    {
-        xTimerStop(timeoutTimer, 0);
-    }
-
-    void resetTimeoutTimer()
-    {
-        xTimerReset(timeoutTimer, 0);
-    }
-
     /// block task for specified time but can be unblocked by external event e.g. button press
     /// @return true if timeout is occurred
-    bool delayUntilEventOrTimeout(units::si::Time blockTime, bool blockIndefinitely = false)
+    bool delayUntilEventOrTimeout(units::si::Time blockTime);
+
+    void waitForRtc();
+
+    void displayLedInitialization();
+
+    // abort delayUntilEventOrTimeout function by notifying the task
+    void abortDelayWaiting()
     {
-        return notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0,
-                          blockIndefinitely ? portMAX_DELAY : toOsTicks(blockTime)) == 0;
+        notifyGive();
     }
 };

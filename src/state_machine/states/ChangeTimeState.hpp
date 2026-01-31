@@ -1,8 +1,6 @@
 #pragma once
 
-#include "LED/StatusLeds.hpp"
 #include "State.hpp"
-#include "rtc/RealTimeClock.hpp"
 
 class ChangeTimeState : public State
 {
@@ -14,58 +12,77 @@ public:
         Clock
     };
 
-    ChangeTimeState(StatusLeds &statusLeds, TimeToModify timeToModify, RealTimeClock &rtc)
-        : statusLeds(statusLeds),     //
-          timeToModify(timeToModify), //
-          rtc(rtc) {};
+    ChangeTimeState(SystemComponents &systemComponents, TimeToModify timeToModify,
+                    StateEventCallback &stateEventCallback)
+        : State(systemComponents, stateEventCallback), //
+          timeToModify(timeToModify) {};
 
-    virtual void onEnter() override
+    ~ChangeTimeState() override = default;
+
+    //-----------------------------------------------------------------
+    void onEnter() override
     {
+        blink = true;
         timeType = TimeType::Hour;
         isTimeModified = false;
+        saveTime = false;
 
-        targetTime = (timeToModify == TimeToModify::Alarm1)   ? rtc.getAlarmTime1()
-                     : (timeToModify == TimeToModify::Alarm2) ? rtc.getAlarmTime2()
-                                                              : rtc.getClockTime();
+        targetTime = (timeToModify == TimeToModify::Alarm1)   ? systemComponents.rtc.getAlarmTime1()
+                     : (timeToModify == TimeToModify::Alarm2) ? systemComponents.rtc.getAlarmTime2()
+                                                              : systemComponents.rtc.getClockTime();
     }
 
-    virtual void onExit() override
+    //-----------------------------------------------------------------
+    void onExit() override
     {
-        if (!isTimeModified)
+        xTimerStop(timeoutTimer, 0);
+
+        if (!(isTimeModified && saveTime))
             return;
 
         if (timeToModify == TimeToModify::Alarm1)
         {
-            signalResult(rtc.writeAlarmTime1(targetTime));
-            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
+            signalResult(systemComponents.rtc.writeAlarmTime1(targetTime));
+            systemComponents.rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm1);
         }
         else if (timeToModify == TimeToModify::Alarm2)
         {
-            signalResult(rtc.writeAlarmTime2(targetTime));
-            rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
+            signalResult(systemComponents.rtc.writeAlarmTime2(targetTime));
+            systemComponents.rtc.setAlarmMode(RealTimeClock::AlarmMode::Alarm2);
         }
         else if (timeToModify == TimeToModify::Clock)
-            signalResult(rtc.writeClockTime(targetTime));
+            signalResult(systemComponents.rtc.writeClockTime(targetTime));
     }
 
-    std::optional<StateId> update(units::si::Time timePassed) override
+    //-----------------------------------------------------------------
+    void draw() override
     {
-        // ToDo: implement blinking display of current changing value
-        // ToDo: increment/decrement every 200ms when button is held
+        systemComponents.display.clearGridDataArray();
 
-        return std::nullopt;
+        if (timeType == TimeType::Hour)
+            renderHourChanging();
+        else
+            renderMinuteChanging();
+
+        blink = !blink;
+
+        setUpdateDelay(500.0_ms);
     }
 
+    //-----------------------------------------------------------------
     std::optional<StateId> onButtonEvent(Buttons::ButtonId buttonId, util::Button::Action action) override
     {
         switch (action)
         {
         case util::Button::Action::ShortPress:
         {
+            requestRedraw();
+
             switch (buttonId)
             {
             case Buttons::ButtonId::Left:
             {
+                blink = true;
                 switch (timeType)
                 {
                 case TimeType::Hour:
@@ -73,6 +90,7 @@ public:
                     break;
 
                 case TimeType::Minute:
+                    saveTime = true;
                     return StateId::Clock;
                     break;
                 }
@@ -85,34 +103,29 @@ public:
                 incrementNumber();
                 break;
 
-            case Buttons::ButtonId::Snooze:
-            {
-                // abort change and go back to clock
-                isTimeModified = false;
-                return StateId::Clock;
-            }
-            break;
-
             case Buttons::ButtonId::BrightnessMinus:
             case Buttons::ButtonId::CCTMinus:
                 decrementNumber();
                 break;
+
+            default:
+                break;
             }
         }
+        break;
 
         case util::Button::Action::LongPress:
         {
-            // start increment/decrement continuously
-            isContinuousChange = true;
-
             if (buttonId == Buttons::ButtonId::Right || buttonId == Buttons::ButtonId::BrightnessPlus ||
                 buttonId == Buttons::ButtonId::CCTPlus)
             {
+                xTimerReset(timeoutTimer, 0);
                 isIncrementing = true;
                 incrementNumber();
             }
             else if (buttonId == Buttons::ButtonId::BrightnessMinus || buttonId == Buttons::ButtonId::CCTMinus)
             {
+                xTimerReset(timeoutTimer, 0);
                 isIncrementing = false;
                 decrementNumber();
             }
@@ -120,7 +133,7 @@ public:
         break;
 
         case util::Button::Action::StopLongPress:
-            isContinuousChange = false;
+            xTimerStop(timeoutTimer, 0);
             break;
 
         default:
@@ -130,6 +143,21 @@ public:
         return std::nullopt;
     }
 
+    //-----------------------------------------------------------------
+    static void timeoutCallback(TimerHandle_t xTimer)
+    {
+        auto changeTimeState = static_cast<ChangeTimeState *>(pvTimerGetTimerID(xTimer));
+
+        if (changeTimeState->isIncrementing)
+            changeTimeState->incrementNumber();
+
+        else
+            changeTimeState->decrementNumber();
+
+        changeTimeState->blink = false;
+        changeTimeState->requestRedraw();
+    }
+
 private:
     enum class TimeType
     {
@@ -137,39 +165,73 @@ private:
         Minute
     } timeType = TimeType::Hour;
 
-    StatusLeds &statusLeds;
     TimeToModify timeToModify;
-    RealTimeClock &rtc;
 
     Time targetTime;
 
     bool isTimeModified = false;
+    bool saveTime = false;
 
-    bool isContinuousChange = false;
     bool isIncrementing = true;
+    bool blink = true;
+
+    TimerHandle_t timeoutTimer{
+        xTimerCreate("changeTimeTimeout", toOsTicks(250.0_ms), pdTRUE, this, &ChangeTimeState::timeoutCallback)};
 
     void signalResult(bool success)
     {
-        success ? statusLeds.signalSuccess() : statusLeds.signalError();
+        success ? systemComponents.statusLeds.signalSuccess() : systemComponents.statusLeds.signalError();
     }
 
     void incrementNumber()
     {
+        blink = false;
         isTimeModified = true;
         if (timeType == TimeType::Hour)
             targetTime.addHours(1);
 
         else
             targetTime.addMinutes(timeToModify == TimeToModify::Clock ? 1 : 5);
+
+        requestRedraw();
     }
 
     void decrementNumber()
     {
+        blink = false;
         isTimeModified = true;
         if (timeType == TimeType::Hour)
             targetTime.subHours(1);
 
         else
             targetTime.subMinutes(timeToModify == TimeToModify::Clock ? 1 : 5);
+
+        requestRedraw();
+    }
+
+    void renderHourChanging()
+    {
+        auto &display = systemComponents.display;
+
+        display.setClock(targetTime);
+        display.renderClock(true);
+
+        display.getGridDataArray()[1].enableUpperBar = display.getGridDataArray()[2].enableUpperBar = blink;
+        if (blink)
+            // show no digits
+            display.getGridDataArray()[1].segments = display.getGridDataArray()[2].segments = 0;
+    }
+
+    void renderMinuteChanging()
+    {
+        auto &display = systemComponents.display;
+
+        display.setClock(targetTime);
+        display.renderClock(true);
+
+        display.getGridDataArray()[3].enableUpperBar = display.getGridDataArray()[4].enableUpperBar = blink;
+        if (blink)
+            // show no digits
+            display.getGridDataArray()[3].segments = display.getGridDataArray()[4].segments = 0;
     }
 };

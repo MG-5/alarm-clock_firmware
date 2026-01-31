@@ -6,20 +6,31 @@ class ChangeLEDState : public State
 {
 
 public:
-    ChangeLEDState() = default;
-    ~ChangeLEDState() = default;
+    ChangeLEDState(SystemComponents &systemComponents, StateEventCallback &stateEventCallback)
+        : State(systemComponents, stateEventCallback) {};
+    ~ChangeLEDState() override = default;
 
-    virtual void onEnter() override {};
-
-    virtual void onExit() override {};
-
-    std::optional<StateId> update(units::si::Time timePassed) override
+    //-----------------------------------------------------------------
+    void onEnter() override
     {
-        return std::nullopt;
     }
 
+    //-----------------------------------------------------------------
+    void onExit() override
+    {
+    }
+
+    //-----------------------------------------------------------------
+    void draw() override
+    {
+        // ToDo: show current LED settings on display
+    }
+
+    //-----------------------------------------------------------------
     std::optional<StateId> onButtonEvent(Buttons::ButtonId buttonId, util::Button::Action action) override
     {
+        // ToDo: set LED settings based on button events
+        // ToDo: reset timeout
         return std::nullopt;
     }
 };

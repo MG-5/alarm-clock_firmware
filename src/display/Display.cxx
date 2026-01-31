@@ -146,7 +146,7 @@ void Display::setClock(Time clockToShow)
 }
 
 //--------------------------------------------------------------------------------------------------
-void Display::showClock(bool forceShowDots)
+void Display::renderClock(bool forceShowDots)
 {
     // add '0' to get the ASCII value of the number
     gridDataArray[1].segments = font.getGlyph((currentTime.hour / 10) + '0');

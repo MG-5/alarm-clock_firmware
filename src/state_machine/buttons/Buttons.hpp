@@ -22,6 +22,35 @@ public:
     util::Button cctPlus{{ButtonCCTPlus_GPIO_Port, ButtonCCTPlus_Pin}};
     util::Button cctMinus{{ButtonCCTMinus_GPIO_Port, ButtonCCTMinus_Pin}};
 
+    enum class ButtonId
+    {
+        Left,
+        Right,
+        Snooze,
+        BrightnessPlus,
+        BrightnessMinus,
+        CCTPlus,
+        CCTMinus
+    };
+
 protected:
-    [[noreturn]] void taskMain(void *) override;
+    [[noreturn]] void taskMain(void *) override
+    {
+        auto lastWakeTime = xTaskGetTickCount();
+
+        while (true)
+        {
+            static constexpr auto ButtonSamplingInterval = 10.0_ms;
+
+            left.update(ButtonSamplingInterval);
+            right.update(ButtonSamplingInterval);
+            snooze.update(ButtonSamplingInterval);
+            brightnessPlus.update(ButtonSamplingInterval);
+            brightnessMinus.update(ButtonSamplingInterval);
+            cctPlus.update(ButtonSamplingInterval);
+            cctMinus.update(ButtonSamplingInterval);
+
+            vTaskDelayUntil(&lastWakeTime, toOsTicks(ButtonSamplingInterval));
+        }
+    }
 };

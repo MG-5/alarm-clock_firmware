@@ -1,218 +1,185 @@
 #include "StateMachine.hpp"
-#include "helpers/freertos.hpp"
-#include "sync.hpp"
 
-void StateMachine::taskMain(void *)
+void StateMachine::taskMain(void *parameters)
 {
     waitForRtc();
     displayLedInitialization();
 
     while (true)
     {
-        display.clearGridDataArray();
-        statusLeds.ledAlarm1.turnOff();
-        statusLeds.ledAlarm2.turnOff();
+        systemComponents.display.clearGridDataArray();
+        systemComponents.statusLeds.turnOffAlarmLeds();
+        stateChanged = false;
 
-        // ToDo: replace it with reading general error state
-        if (!rtc.isRtcOnline())
-            statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Red);
+        currentState->onEnter();
 
-        // check if alarm is activated
-        if (rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
+        while (true)
         {
-            if (initialAlarm)
+            currentState->draw();
+
+            if (stateChanged || !delayUntilEventOrTimeout(currentState->getUpdateDelay()))
             {
-                initialAlarm = false;
-                alarmStateCounter = 0;
-                updateDisplayState(DisplayState::Clock); // also wake up display
-                ledStrip.turnOnWithFade();
-                isLedStripOn = true;
+                if (shouldRedraw)
+                {
+                    shouldRedraw = false;
+                    continue; // redraw requested, continue loop
+                }
+                break; // state changed/event occurred, exit loop to process it
             }
 
-            // vibrationCushion.write(rtc.getAlarmState() == RealTimeClock::AlarmState::Vibration);
-
-            showClockWithBlinkingAlarm();
-            // ToDo: sunrise fading
-            // ToDo: control vibration
-            // ToDo: turn off alarm after 2 min no reaction
-            delayUntilEventOrTimeout(1.0_s);
-            continue; // bypass displayState processing
+            if (stateChanged)
+                break; // state changed, exit loop to process it
         }
 
-        checkIfGoToStandby();
-        processDisplayState();
+        currentState->onExit();
+        currentState = getStateFromId(currentStateId);
     }
-};
+}
 
 // -----------------------------------------------------------------
-/// draw display with clock and blinking alarm LEDs
-void StateMachine::showClockWithBlinkingAlarm()
+State *StateMachine::getStateFromId(StateId stateId)
 {
-    auto currentClockTime = rtc.getClockTime();
-    display.setClock(currentClockTime);
-    display.showClock();
-    bool shouldBlink = currentClockTime.second % 2 == 0;
-    statusLeds.ledAlarm1.setState(shouldBlink && (rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
-                                                  rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both));
-    statusLeds.ledAlarm2.setState(shouldBlink && (rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
-                                                  rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both));
-}
-
-//-----------------------------------------------------------------
-void StateMachine::checkIfGoToStandby()
-{
-    // ToDo: wake up after 7:00
-
-    if (displayState == DisplayState::Clock && !isLedStripOn)
+    switch (stateId)
     {
-        // go to standby between 23:00 and 7:00
-        if (rtc.getClockTime().hour >= 23 || rtc.getClockTime().hour < 7)
-        {
-            if (secondsCounter++ >= 10)
-            {
-                secondsCounter = 0;
-                updateDisplayState(DisplayState::Standby);
-            }
-        }
-    }
-}
+    case StateId::Standby:
+        return &standbyState;
 
-//-----------------------------------------------------------------
-void StateMachine::processDisplayState()
-{
-    switch (displayState)
-    {
-    case DisplayState::Standby:
-        delayUntilEventOrTimeout(1.0_s);
-        break;
+    case StateId::AlarmTimes:
+        return &alarmTimesState;
 
-    case DisplayState::Clock:
-        display.setClock(rtc.getClockTime());
-        display.showClock();
-        delayUntilEventOrTimeout(1.0_s);
-        break;
+    case StateId::ChangeClock:
+        return &changeTimeState;
 
-    case DisplayState::ClockWithAlarmLeds:
-        display.setClock(rtc.getClockTime());
-        display.showClock();
-        statusLeds.ledAlarm1.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm1 ||
-                                      rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
-        statusLeds.ledAlarm2.setState(rtc.getAlarmMode() == RealTimeClock::AlarmMode::Alarm2 ||
-                                      rtc.getAlarmMode() == RealTimeClock::AlarmMode::Both);
-        if (delayUntilEventOrTimeout(1.0_s))
-            if (secondsCounter++ >= 3)
-            {
-                secondsCounter = 0;
-                updateDisplayState(DisplayState::Clock);
-            }
-        break;
+    case StateId::ChangeAlarm1:
+        return &changeAlarm1State;
 
-    case DisplayState::DisplayAlarm1:
-        display.setClock(rtc.getAlarmTime1());
-        display.showClock(true);
-        statusLeds.ledAlarm1.setState(blink);
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
+    case StateId::ChangeAlarm2:
+        return &changeAlarm2State;
 
-    case DisplayState::DisplayAlarm2:
-        display.setClock(rtc.getAlarmTime2());
-        display.showClock(true);
-        statusLeds.ledAlarm2.setState(blink);
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
+    case StateId::CurrentAlarm:
+        return &showCurrentAlarmMode;
 
-    case DisplayState::ChangeAlarm1Hour:
-        showHourChanging();
-        statusLeds.ledAlarm1.turnOn();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
+    case StateId::ChangeLedStrip:
+        return &changeLEDState;
 
-    case DisplayState::ChangeAlarm2Hour:
-        showHourChanging();
-        statusLeds.ledAlarm2.turnOn();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
+    case StateId::Test:
+        return &testState;
 
-    case DisplayState::ChangeAlarm1Minute:
-        showMinuteChanging();
-        statusLeds.ledAlarm1.turnOn();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
-
-    case DisplayState::ChangeAlarm2Minute:
-        showMinuteChanging();
-        statusLeds.ledAlarm2.turnOn();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
-
-    case DisplayState::DisplayAlarmStatus:
-        showCurrentAlarmMode();
-        if (delayUntilEventOrTimeout(3.0_s))
-            goToDefaultState();
-        break;
-
-    case DisplayState::ChangeClockHour:
-        showHourChanging();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
-
-    case DisplayState::ChangeClockMinute:
-        showMinuteChanging();
-        blink = !blink;
-        delayUntilEventOrTimeout(500.0_ms);
-        break;
-
-    case DisplayState::LedBrightness:
-        showCurrentBrightness();
-        if (delayUntilEventOrTimeout(4.0_s))
-            restorePreviousState();
-        break;
-
-    case DisplayState::LedCCT:
-        showCurrentCCT();
-        if (delayUntilEventOrTimeout(4.0_s))
-            restorePreviousState();
-        break;
-
-    case DisplayState::Test:
-    {
-        for (size_t i = 0; i < display.getGridDataArray().size(); i++)
-        {
-            display.getGridDataArray()[i].segments = 0b11111111111111; // 15 segments
-            display.getGridDataArray()[i].enableDots = true;
-            display.getGridDataArray()[i].enableUpperBar = true;
-            display.getGridDataArray()[i].enableLowerBar = true;
-        }
-        statusLeds.ledRedGreen.setColor(util::led::pwm::DualLedColor::Yellow);
-        statusLeds.turnAllOn();
-        prevLedState = isLedStripOn;
-        prevColor = ledStrip.getColorTemperature();
-        prevBrightness = ledStrip.getGlobalBrightness();
-        ledStrip.setColorTemperature(LedStrip::NeutralColorTemperature, false);
-        ledStrip.setGlobalBrightness(100, false);
-        // vibrationCushion.write(true);
-
-        delayUntilEventOrTimeout(2.0_s);
-
-        abortTest();
-    }
-    break;
-
+    case StateId::Clock:
     default:
+        return &clockState;
+    }
+}
+
+// -----------------------------------------------------------------
+void StateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action)
+{
+    // ToDo: check for alarm
+
+    if (buttonId == Buttons::ButtonId::Snooze)
+    {
+        if (action == util::Button::Action::ShortPress)
+        {
+            requestStateChange(StateId::Clock);
+        }
+        else if (action == util::Button::Action::LongPress)
+        {
+            isLedStripOn = !isLedStripOn;
+            isLedStripOn ? systemComponents.ledStrip.turnOnWithFade() : systemComponents.ledStrip.turnOffWithFade();
+
+            if (isLedStripOn)
+            {
+                if (currentStateId == StateId::Standby)
+                {
+                    // if we are in standby, turn on the display to show the change immediately
+                    requestStateChange(StateId::Clock);
+                }
+            }
+            else if (currentStateId == StateId::Clock)
+            {
+                // if we are in clock state, check if we should go to standby after turning off the led strip
+                clockState.evaluateStandbyCondition();
+            }
+        }
+        return;
+    }
+
+    // delegate button event to current state and obtain a possibly new state as a result
+    auto newStateId = currentState->onButtonEvent(buttonId, action);
+
+    if (newStateId.has_value() && newStateId.value() != currentStateId)
+    {
+        // state change requested
+        requestStateChange(newStateId.value());
+        abortDelayWaiting();
+    }
+}
+
+// -----------------------------------------------------------------
+void StateMachine::handleStateEvent(StateEvent event, std::optional<StateId> targetState)
+{
+    switch (event)
+    {
+    case StateEvent::Redraw:
+        requestRedraw();
+        break;
+
+    case StateEvent::StateChange:
+        if (targetState.has_value())
+            requestStateChange(targetState.value());
+
         break;
     }
+
+    abortDelayWaiting();
+}
+
+// -----------------------------------------------------------------
+void StateMachine::assignButtonCallbacks()
+{
+    // use lambda
+    buttons.left.setCallback([this](util::Button::Action action)
+                             { commonButtonCallback(Buttons::ButtonId::Left, action); });
+
+    buttons.right.setCallback([this](util::Button::Action action)
+                              { commonButtonCallback(Buttons::ButtonId::Right, action); });
+
+    buttons.snooze.setCallback([this](util::Button::Action action)
+                               { commonButtonCallback(Buttons::ButtonId::Snooze, action); });
+
+    buttons.brightnessPlus.setCallback([this](util::Button::Action action)
+                                       { commonButtonCallback(Buttons::ButtonId::BrightnessPlus, action); });
+
+    buttons.brightnessMinus.setCallback([this](util::Button::Action action)
+                                        { commonButtonCallback(Buttons::ButtonId::BrightnessMinus, action); });
+
+    buttons.cctPlus.setCallback([this](util::Button::Action action)
+                                { commonButtonCallback(Buttons::ButtonId::CCTPlus, action); });
+
+    buttons.cctMinus.setCallback([this](util::Button::Action action)
+                                 { commonButtonCallback(Buttons::ButtonId::CCTMinus, action); });
+}
+
+bool StateMachine::delayUntilEventOrTimeout(units::si::Time blockTime)
+{
+    clearNotifications();
+    return !notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0, toOsTicks(blockTime));
+}
+
+//-----------------------------------------------------------------
+void StateMachine::waitForRtc()
+{
+    systemComponents.statusLeds.ledRedGreen.setColorBlinking(util::led::pwm::DualLedColor::Red, 2.0_Hz);
+    syncEventGroup.waitBits(sync::RtcHasRespondedOnce, pdFALSE, pdFALSE, portMAX_DELAY);
+    systemComponents.statusLeds.ledRedGreen.turnOff();
 }
 
 //-----------------------------------------------------------------
 void StateMachine::displayLedInitialization()
 {
+    auto &display = systemComponents.display;
+    auto &statusLeds = systemComponents.statusLeds;
+
     statusLeds.turnAllOff();
     display.setup();
     display.showInitialization();
@@ -224,168 +191,4 @@ void StateMachine::displayLedInitialization()
     // vibrationCushion.write(false);
 
     display.enableDisplay(); // start multiplexing
-}
-
-//-----------------------------------------------------------------
-void StateMachine::waitForRtc()
-{
-    statusLeds.ledRedGreen.setColorBlinking(util::led::pwm::DualLedColor::Red, 2.0_Hz);
-    syncEventGroup.waitBits(sync::RtcHasRespondedOnce, pdFALSE, pdFALSE, portMAX_DELAY);
-    statusLeds.ledRedGreen.turnOff();
-}
-
-//-----------------------------------------------------------------
-void StateMachine::showHourChanging()
-{
-    display.setClock(timeToModify);
-    display.showClock(true);
-    if (blink)
-    {
-        // replace numbers with underscore
-        display.getGridDataArray()[1].segments = display.getGridDataArray()[2].segments = font.getGlyph('_');
-    }
-}
-
-//-----------------------------------------------------------------
-void StateMachine::showMinuteChanging()
-{
-    display.setClock(timeToModify);
-    display.showClock(true);
-    if (blink)
-    {
-        // replace numbers with underscore
-        display.getGridDataArray()[3].segments = display.getGridDataArray()[4].segments = font.getGlyph('_');
-    }
-}
-
-//-----------------------------------------------------------------
-void StateMachine::showCurrentAlarmMode()
-{
-    display.getGridDataArray()[2].segments = font.getGlyph('A');
-    display.getGridDataArray()[2].enableDots = true;
-
-    switch (rtc.getAlarmMode())
-    {
-    case RealTimeClock::AlarmMode::Off:
-        display.getGridDataArray()[3].segments = font.getGlyph('O');
-        display.getGridDataArray()[4].segments = font.getGlyph('f');
-        display.getGridDataArray()[5].segments = font.getGlyph('f');
-        break;
-
-    case RealTimeClock::AlarmMode::Alarm1:
-        display.getGridDataArray()[4].segments = font.getGlyph('1');
-        statusLeds.ledAlarm1.turnOn();
-        break;
-
-    case RealTimeClock::AlarmMode::Alarm2:
-        display.getGridDataArray()[4].segments = font.getGlyph('2');
-        statusLeds.ledAlarm2.turnOn();
-        break;
-
-    case RealTimeClock::AlarmMode::Both:
-        display.getGridDataArray()[3].segments = font.getGlyph('1');
-        display.getGridDataArray()[4].segments = font.getGlyph('+');
-        display.getGridDataArray()[5].segments = font.getGlyph('2');
-        statusLeds.ledAlarm1.turnOn();
-        statusLeds.ledAlarm2.turnOn();
-        break;
-    }
-}
-
-//-----------------------------------------------------------------
-void StateMachine::showCurrentBrightness()
-{
-    display.getGridDataArray()[2].segments = font.getGlyph('B');
-    display.getGridDataArray()[2].enableDots = true;
-
-    uint8_t brightness = ledStrip.getGlobalBrightness();
-    display.getGridDataArray()[3].segments = font.getGlyph('0' + brightness / 100);
-    display.getGridDataArray()[4].segments = font.getGlyph('0' + (brightness % 100) / 10);
-    display.getGridDataArray()[5].segments = font.getGlyph('0' + brightness % 10);
-}
-
-//-----------------------------------------------------------------
-void StateMachine::showCurrentCCT()
-{
-    const uint16_t Cct = ledStrip.getColorTemperature().getMagnitude<uint16_t>();
-
-    display.getGridDataArray()[1].segments = font.getGlyph('0' + Cct / 1000);
-    display.getGridDataArray()[1].segments = font.getGlyph('0' + Cct / 1000);
-    display.getGridDataArray()[2].segments = font.getGlyph('0' + (Cct % 1000) / 100);
-    display.getGridDataArray()[3].segments = font.getGlyph('0' + (Cct % 100) / 10);
-    display.getGridDataArray()[4].segments = font.getGlyph('0' + Cct % 10);
-    display.getGridDataArray()[5].segments = font.getGlyph('K');
-}
-
-//-----------------------------------------------------------------
-void StateMachine::updateDisplayState(DisplayState newState)
-{
-    if (newState == DisplayState::Standby)
-        display.disableDisplay();
-
-    else if (displayState == DisplayState::Standby)
-        display.enableDisplay();
-
-    displayState = newState;
-
-    stopTimeoutTimer();
-    revokeDisplayDelay();
-}
-
-//-----------------------------------------------------------------
-void StateMachine::signalResult(bool success)
-{
-    success ? statusLeds.signalSuccess() : statusLeds.signalError();
-}
-
-//-----------------------------------------------------------------
-void StateMachine::revokeDisplayDelay()
-{
-    notify(1, util::wrappers::NotifyAction::SetBits);
-}
-
-//-----------------------------------------------------------------
-void StateMachine::goToDefaultState()
-{
-    secondsCounter = 0;
-    updateDisplayState(DisplayState::ClockWithAlarmLeds);
-}
-
-//-----------------------------------------------------------------
-void StateMachine::savePreviousState()
-{
-    previousDisplayState = displayState;
-}
-
-//-----------------------------------------------------------------
-void StateMachine::restorePreviousState()
-{
-    updateDisplayState(previousDisplayState);
-}
-
-//-----------------------------------------------------------------
-void StateMachine::abortTest()
-{
-    ledStrip.setColorTemperature(prevColor, false);
-    ledStrip.setGlobalBrightness(prevBrightness, false);
-
-    if (!prevLedState)
-        ledStrip.turnOffImmediately();
-    // vibrationCushion.write(false);
-    statusLeds.turnAllOff();
-    updateDisplayState(DisplayState::Clock);
-}
-
-//-----------------------------------------------------------------
-void StateMachine::assignButtonCallbacks()
-{
-    buttons.left.setCallback(std::bind(&StateMachine::buttonLeftCallback, this, std::placeholders::_1));
-    buttons.right.setCallback(std::bind(&StateMachine::buttonRightCallback, this, std::placeholders::_1));
-    buttons.snooze.setCallback(std::bind(&StateMachine::buttonSnoozeCallback, this, std::placeholders::_1));
-    buttons.brightnessPlus.setCallback(
-        std::bind(&StateMachine::buttonBrightnessPlusCallback, this, std::placeholders::_1));
-    buttons.brightnessMinus.setCallback(
-        std::bind(&StateMachine::buttonBrightnessMinusCallback, this, std::placeholders::_1));
-    buttons.cctPlus.setCallback(std::bind(&StateMachine::buttonCCTPlusCallback, this, std::placeholders::_1));
-    buttons.cctMinus.setCallback(std::bind(&StateMachine::buttonCCTMinusCallback, this, std::placeholders::_1));
 }

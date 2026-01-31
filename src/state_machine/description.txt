@@ -1,0 +1,52 @@
+DisplayStateController : (States ändern)
+
+                             void processDisplayState(); // process current display state
+void updateDisplayState(DisplayState newState);          // catch some special transitions when changing display state
+void savePreviousState();                                // save current display state for later restoration
+void restorePreviousState();                             // restore previously saved display state
+void goToDefaultState();                                 // go to default display state, showing clock
+void revokeDisplayDelay();                               // reset timeout for state transition purposes
+void abortTest();                                        // abort ongoing test sequence and return to default state
+
+// save current display state and switch to LED brightness or CCT change screen
+void switchToLedChangeScreen(DisplayState newState);
+
+void checkIfGoToStandby(); // go to standby between 23:00 and 7:00 when light strip is off
+void waitForRtc();         // wait until first message from RTC is received
+
+// helper functions for incrementing/decrementing digits like hours, minutes in various display states
+void incrementNumber();
+void decrementNumber();
+
+// ----------------------------------------------------------------
+
+DisplayRenderer : (keine States ändern, nur Anzeigen dieser)
+
+                      void showHourChanging(); // show hour changing screen, hour digits blinking
+void showMinuteChanging();                     // show minute changing screen, minute digits blinking
+void showCurrentAlarmMode();                   // display current alarm mode
+void showCurrentBrightness();                  // display current LED brightness
+void showCurrentCCT();                         // display current LED color temperature
+void showClockWithBlinkingAlarm();             // draw display with clock and blinking alarm LEDs
+
+void displayLedInitialization(); // nice LED initialization sequence at startup
+void signalResult(bool success); // trigger an temporary event on status LED to show sucess or failure
+
+// ----------------------------------------------------------------
+
+InputController : (stößt State - Änderungen an, aber ändert selbst keine States)
+
+                  // various button callback functions, each has specific state transtion logic inside and calls other
+                  // member functions
+                  void buttonLeftCallback(util::Button::Action action);
+void buttonRightCallback(util::Button::Action action);
+void buttonSnoozeCallback(util::Button::Action action);
+void buttonBrightnessPlusCallback(util::Button::Action action);
+void buttonBrightnessMinusCallback(util::Button::Action action);
+void buttonCCTPlusCallback(util::Button::Action action);
+void buttonCCTMinusCallback(util::Button::Action action);
+
+// helper function to handle plus/minus button actions for brightness and CCT changes
+void handlePlusMinusButtons(util::Button::Action action, bool isIncrementing, bool isBrightness);
+
+void assignButtonCallbacks(); // link to interal button callback functions

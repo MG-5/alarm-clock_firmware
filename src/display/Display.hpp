@@ -43,7 +43,7 @@ public:
     }
 
     void setClock(Time clockToShow);
-    void showClock(bool forceShowDots = false);
+    void renderClock(bool forceShowDots = false);
 
 private:
     DisplayDimming &dimming;

@@ -4,18 +4,33 @@
 class TestState : public State
 {
 public:
-    TestState() = default;
-    ~TestState() = default;
+    TestState(SystemComponents &systemComponents, StateEventCallback &stateEventCallback)
+        : State(systemComponents, stateEventCallback) {};
+    ~TestState() override = default;
 
-    virtual void onEnter() override {};
-
-    virtual void onExit() override {};
-
-    std::optional<StateId> update(units::si::Time timePassed) override
+    //-----------------------------------------------------------------
+    void onEnter() override
     {
-        return std::nullopt;
+        // ToDo: turn on vibration cushion
+        // ToDo: set LED strip to test pattern
+        // ToDo: show all segments on display
     }
 
+    //-----------------------------------------------------------------
+    void onExit() override
+    {
+        // ToDo: turn off vibration cushion
+        // ToDo: set previous LED strip state
+    }
+
+    //-----------------------------------------------------------------
+    void draw() override
+    {
+        // ToDo: ?
+        setUpdateDelay(1.0_s);
+    }
+
+    //-----------------------------------------------------------------
     std::optional<StateId> onButtonEvent(Buttons::ButtonId buttonId, util::Button::Action action) override
     {
         return std::nullopt;
