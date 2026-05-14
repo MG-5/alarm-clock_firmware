@@ -1,6 +1,6 @@
-#include "StateMachine.hpp"
+#include "UiStateMachine.hpp"
 
-void StateMachine::taskMain(void *parameters)
+void UiStateMachine::taskMain(void *parameters)
 {
     waitForRtc();
     displayLedInitialization();
@@ -24,11 +24,11 @@ void StateMachine::taskMain(void *parameters)
                     shouldRedraw = false;
                     continue; // redraw requested, continue loop
                 }
-                break; // state changed/event occurred, exit loop to process it
+                break; // state changed/event occurred, exit loop to process state transition
             }
 
             if (stateChanged)
-                break; // state changed, exit loop to process it
+                break; // state changed, exit loop to process state transition
         }
 
         currentState->onExit();
@@ -37,7 +37,7 @@ void StateMachine::taskMain(void *parameters)
 }
 
 // -----------------------------------------------------------------
-State *StateMachine::getStateFromId(StateId stateId)
+State *UiStateMachine::getStateFromId(StateId stateId)
 {
     switch (stateId)
     {
@@ -72,11 +72,15 @@ State *StateMachine::getStateFromId(StateId stateId)
 }
 
 // -----------------------------------------------------------------
-void StateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action)
+void UiStateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action)
 {
-    // ToDo: check for alarm
-
-    if (buttonId == Buttons::ButtonId::Snooze)
+    // check if alarm is currently active
+    if (systemComponents.rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
+    {
+        // ToDo: delegate button events to RTC alarm logic
+        // ToDo: all buttons?
+    }
+    else if (buttonId == Buttons::ButtonId::Snooze)
     {
         if (action == util::Button::Action::ShortPress)
         {
@@ -116,7 +120,7 @@ void StateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Button
 }
 
 // -----------------------------------------------------------------
-void StateMachine::handleStateEvent(StateEvent event, std::optional<StateId> targetState)
+void UiStateMachine::handleStateEvent(StateEvent event, std::optional<StateId> targetState)
 {
     switch (event)
     {
@@ -135,7 +139,7 @@ void StateMachine::handleStateEvent(StateEvent event, std::optional<StateId> tar
 }
 
 // -----------------------------------------------------------------
-void StateMachine::assignButtonCallbacks()
+void UiStateMachine::assignButtonCallbacks()
 {
     // use lambda
     buttons.left.setCallback([this](util::Button::Action action)
@@ -160,14 +164,14 @@ void StateMachine::assignButtonCallbacks()
                                  { commonButtonCallback(Buttons::ButtonId::CCTMinus, action); });
 }
 
-bool StateMachine::delayUntilEventOrTimeout(units::si::Time blockTime)
+bool UiStateMachine::delayUntilEventOrTimeout(units::si::Time blockTime)
 {
     clearNotifications();
     return !notifyWait(ULONG_MAX, ULONG_MAX, (uint32_t *)0, toOsTicks(blockTime));
 }
 
 //-----------------------------------------------------------------
-void StateMachine::waitForRtc()
+void UiStateMachine::waitForRtc()
 {
     systemComponents.statusLeds.ledRedGreen.setColorBlinking(util::led::pwm::DualLedColor::Red, 2.0_Hz);
     syncEventGroup.waitBits(sync::RtcHasRespondedOnce, pdFALSE, pdFALSE, portMAX_DELAY);
@@ -175,7 +179,7 @@ void StateMachine::waitForRtc()
 }
 
 //-----------------------------------------------------------------
-void StateMachine::displayLedInitialization()
+void UiStateMachine::displayLedInitialization()
 {
     auto &display = systemComponents.display;
     auto &statusLeds = systemComponents.statusLeds;

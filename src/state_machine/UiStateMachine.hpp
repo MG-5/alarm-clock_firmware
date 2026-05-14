@@ -13,17 +13,17 @@
 #include "display/Display.hpp"
 #include "sync.hpp"
 
-class StateMachine : public util::wrappers::TaskWithMemberFunctionBase
+class UiStateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    StateMachine(SystemComponents &systemComponents)
-        : util::wrappers::TaskWithMemberFunctionBase("stateMachineTask", 512, osPriorityBelowNormal4), //
+    UiStateMachine(SystemComponents &systemComponents)
+        : util::wrappers::TaskWithMemberFunctionBase("uiStateMachineTask", 512, osPriorityBelowNormal4), //
           systemComponents(systemComponents)
     {
         assignButtonCallbacks();
     }
 
-    ~StateMachine() = default;
+    ~UiStateMachine() = default;
 
     void requestRedraw()
     {
@@ -47,7 +47,7 @@ private:
     SystemComponents &systemComponents;
 
     StateEventCallback stateEventCallback{
-        std::bind(&StateMachine::handleStateEvent, this, std::placeholders::_1, std::placeholders::_2)};
+        std::bind(&UiStateMachine::handleStateEvent, this, std::placeholders::_1, std::placeholders::_2)};
 
     StandbyState standbyState{systemComponents, stateEventCallback};
     ClockState clockState{systemComponents, stateEventCallback};

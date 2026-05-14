@@ -4,7 +4,7 @@
 #include "LED/StatusLeds.hpp"
 #include "display/Display.hpp"
 #include "rtc/RealTimeClock.hpp"
-#include "state_machine/StateMachine.hpp"
+#include "state_machine/UiStateMachine.hpp"
 
 /// The entry point of users C++ firmware. This comes after CubeHAL and FreeRTOS initialization.
 /// All needed classes and objects have the root here.
@@ -49,5 +49,5 @@ private:
     RealTimeClock rtc{i2cBusAccessor};
 
     SystemComponents systemComponents{display, rtc, statusLeds, ledStrip};
-    StateMachine stateMachine{systemComponents};
+    UiStateMachine uiStateMachine{systemComponents};
 };
