@@ -3,6 +3,8 @@
 #include "DS3231.hpp"
 #include "wrappers/Task.hpp"
 
+#include "state_machine/buttons/Buttons.hpp"
+
 class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
@@ -57,6 +59,8 @@ public:
         return alarmMode;
     }
 
+    void handleButtonEvents(Buttons::ButtonId buttonId, util::Button::Action action);
+
 protected:
     [[noreturn]] void taskMain(void *) override;
 
@@ -73,8 +77,12 @@ private:
     AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
 
+    uint16_t sunriseCounter = 0;
+
+    void initRTC();
     void setupRtcAndAlarms();
     void fetchClockTime();
+
     void determineAlarmTriggerState();
-    void initRTC();
+    void processAlarmLogic();
 };

@@ -71,6 +71,7 @@ void RealTimeClock::fetchClockTime()
 }
 
 //--------------------------------------------------------------------------------------------------
+// check if alarm should be triggered based on current time/alarm times/alarm mode and update alarm state accordingly
 void RealTimeClock::determineAlarmTriggerState()
 {
     if (alarmMode == AlarmMode::Off)
@@ -91,7 +92,10 @@ void RealTimeClock::determineAlarmTriggerState()
     // only trigger sunrise if alarm is off and not already triggered
     if (alarmState == AlarmState::Off && (isAlarm1SunriseTriggered || isAlarm2SunriseTriggered))
     {
+        // start sunrise
         alarmState = AlarmState::Sunrise;
+
+        // ToDo: handle transition, reset led strip and counter for sunrise effect
         return;
     }
 
@@ -106,10 +110,13 @@ void RealTimeClock::determineAlarmTriggerState()
     if (alarmState == AlarmState::Sunrise && (isAlarm1VibrationTriggered || isAlarm2VibrationTriggered))
     {
         alarmState = AlarmState::Vibration;
+
+        // ToDo: handle transition, reset vibration state
         return;
     }
 
     if (alarmState != AlarmState::Snooze)
+
         return;
 
     constexpr auto SnoozeTime = 5;
@@ -189,4 +196,49 @@ bool RealTimeClock::writeAlarmTime2(Time &newAlarmTime)
 bool RealTimeClock::writeClockTime(Time &newClockTime)
 {
     return rtcModule.setTime(newClockTime);
+}
+
+//--------------------------------------------------------------------------------------------------
+void RealTimeClock::handleButtonEvents(Buttons::ButtonId buttonId, util::Button::Action action)
+{
+    // from all states alarm can be turned off by long pressing the left button
+    // sunrise/snooze -> no button interaction possible
+    // vibration -> snooze button
+
+    if (buttonId == Buttons::ButtonId::Left && action == util::Button::Action::LongPress)
+    {
+        alarmState = AlarmState::Off;
+        // ToDo: handle transition?
+    }
+    else if (alarmState == AlarmState::Vibration && buttonId == Buttons::ButtonId::Snooze &&
+             action == util::Button::Action::ShortPress)
+    {
+        alarmState = AlarmState::Snooze;
+    }
+}
+
+// --------------------------------------------------------------------------------------------------
+void RealTimeClock::processAlarmLogic()
+{
+    if (alarmState == AlarmState::Off)
+        return;
+
+    if (alarmState == AlarmState::Sunrise)
+    {
+        // ToDo: implement sunrise effect by increasing brightness of led strip in a loop until max brightness is
+        // reached or alarm state changes first ramp warm white, then cold white 1024 steps, warmwhite increment every 1
+        // second by one step -> 17 minutes ramp time then cold white increment every 1 second by two step -> 8.5
+        // minutes ramp time total ramp time 25.5 minutes
+
+        if (sunriseCounter < LedStrip::PwmSteps)
+        {
+            sys ledStrip.setRawWarmWhiteLevel(sunriseCounter);
+            sunriseCounter++;
+        }
+        else if (sunriseCounter < 3 * LedStrip::PwmSteps)
+        {
+            ledStrip.setRawColdWhiteLevel((sunriseCounter - LedStrip::PwmSteps) * 2);
+            sunriseCounter++;
+        }
+    }
 }

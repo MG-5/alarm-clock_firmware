@@ -110,6 +110,16 @@ public:
         return currentLedState;
     }
 
+    void setRawWarmWhiteLevel(size_t newLevel)
+    {
+        warmWhiteLedStrip.setLightLevel(newLevel);
+    }
+
+    void setRawColdWhiteLevel(size_t newLevel)
+    {
+        coldWhiteLedStrip.setLightLevel(newLevel);
+    }
+
 protected:
     [[noreturn]] void taskMain(void *)
     {

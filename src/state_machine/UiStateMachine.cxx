@@ -77,10 +77,12 @@ void UiStateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Butt
     // check if alarm is currently active
     if (systemComponents.rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
     {
-        // ToDo: delegate button events to RTC alarm logic
-        // ToDo: all buttons?
+        // delegate all button events to RTC alarm logic
+        systemComponents.rtc.handleButtonEvents(buttonId, action);
+        return;
     }
-    else if (buttonId == Buttons::ButtonId::Snooze)
+
+    if (buttonId == Buttons::ButtonId::Snooze)
     {
         if (action == util::Button::Action::ShortPress)
         {

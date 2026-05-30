@@ -55,7 +55,7 @@ target_sources(
     src/rtc/DS3231.cxx
     src/rtc/RealTimeClock.cxx
 
-    src/state_machine/StateMachine.cxx
+    src/state_machine/UiStateMachine.cxx
 
     src/Application.cxx
 )
