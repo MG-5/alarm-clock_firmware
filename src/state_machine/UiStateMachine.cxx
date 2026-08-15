@@ -13,22 +13,10 @@ void UiStateMachine::taskMain(void *parameters)
 
         currentState->onEnter();
 
-        while (true)
+        while (!stateChanged)
         {
             currentState->draw();
-
-            if (stateChanged || !delayUntilEventOrTimeout(currentState->getUpdateDelay()))
-            {
-                if (shouldRedraw)
-                {
-                    shouldRedraw = false;
-                    continue; // redraw requested, continue loop
-                }
-                break; // state changed/event occurred, exit loop to process state transition
-            }
-
-            if (stateChanged)
-                break; // state changed, exit loop to process state transition
+            delayUntilEventOrTimeout(currentState->getUpdateDelay());
         }
 
         currentState->onExit();
@@ -127,7 +115,8 @@ void UiStateMachine::handleStateEvent(StateEvent event, std::optional<StateId> t
     switch (event)
     {
     case StateEvent::Redraw:
-        requestRedraw();
+        // notify loop to redraw immediately
+        abortDelayWaiting();
         break;
 
     case StateEvent::StateChange:
@@ -136,8 +125,6 @@ void UiStateMachine::handleStateEvent(StateEvent event, std::optional<StateId> t
 
         break;
     }
-
-    abortDelayWaiting();
 }
 
 // -----------------------------------------------------------------

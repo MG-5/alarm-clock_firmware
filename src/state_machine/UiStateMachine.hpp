@@ -25,11 +25,6 @@ public:
 
     ~UiStateMachine() = default;
 
-    void requestRedraw()
-    {
-        shouldRedraw = true;
-    }
-
     void requestStateChange(StateId newStateId)
     {
         currentStateId = newStateId;
