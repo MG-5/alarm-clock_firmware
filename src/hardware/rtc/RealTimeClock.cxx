@@ -230,6 +230,7 @@ void RealTimeClock::processAlarmLogic()
         // second by one step -> 17 minutes ramp time then cold white increment every 1 second by two step -> 8.5
         // minutes ramp time total ramp time 25.5 minutes
 
+        /*
         if (sunriseCounter < LedStrip::PwmSteps)
         {
             sys ledStrip.setRawWarmWhiteLevel(sunriseCounter);
@@ -240,5 +241,6 @@ void RealTimeClock::processAlarmLogic()
             ledStrip.setRawColdWhiteLevel((sunriseCounter - LedStrip::PwmSteps) * 2);
             sunriseCounter++;
         }
+        */
     }
 }

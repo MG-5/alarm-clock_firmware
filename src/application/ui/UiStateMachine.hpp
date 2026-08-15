@@ -10,7 +10,7 @@
 #include "states/StandbyState.hpp"
 #include "states/TestState.hpp"
 
-#include "display/Display.hpp"
+#include "hardware/display/Display.hpp"
 #include "sync.hpp"
 
 class UiStateMachine : public util::wrappers::TaskWithMemberFunctionBase

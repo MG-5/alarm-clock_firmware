@@ -2,7 +2,8 @@
 
 #include "DisplayDimming.hpp"
 #include "font/Font.hpp"
-#include "rtc/Time/Time.hpp"
+#include "hardware/rtc/Time/Time.hpp"
+
 #include "units/si/time.hpp"
 #include "util/gpio.hpp"
 

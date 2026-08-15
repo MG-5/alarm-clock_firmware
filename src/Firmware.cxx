@@ -2,21 +2,21 @@
 #include "main.h"
 #include "task.h"
 
-#include "Application.hpp"
+#include "Firmware.hpp"
 #include "wrappers/Task.hpp"
 
 #include <memory>
 
 extern "C" void StartDefaultTask(void *) // NOLINT
 {
-    static auto app = std::make_unique<Application>();
+    static auto app = std::make_unique<Firmware>();
     app->run();
 
     configASSERT(false); // this line should be never reached
 }
 
 //--------------------------------------------------------------------------------------------------
-Application::Application()
+Firmware::Firmware()
 {
     // Delegated Singleton, see getApplicationInstance() for further explanations
     configASSERT(instance == nullptr);
@@ -26,7 +26,7 @@ Application::Application()
 }
 
 //--------------------------------------------------------------------------------------------------
-[[noreturn]] void Application::run()
+[[noreturn]] void Firmware::run()
 {
     util::wrappers::Task::applicationIsReadyStartAllTasks();
     while (true)
@@ -36,7 +36,7 @@ Application::Application()
 }
 
 //--------------------------------------------------------------------------------------------------
-Application &Application::getApplicationInstance()
+Firmware &Firmware::getApplicationInstance()
 {
     // Not constructing Application in this singleton, to avoid bugs where something tries to
     // access this function, while application constructs which will cause infinite recursion
@@ -44,7 +44,7 @@ Application &Application::getApplicationInstance()
 }
 
 //--------------------------------------------------------------------------------------------------
-void Application::registerCallbacks()
+void Firmware::registerCallbacks()
 {
     HAL_StatusTypeDef result = HAL_OK;
 
@@ -62,13 +62,13 @@ void Application::registerCallbacks()
 }
 
 //--------------------------------------------------------------------------------------------------
-void Application::multiplexingTimerUpdate()
+void Firmware::multiplexingTimerUpdate()
 {
     getApplicationInstance().display.multiplexingInterrupt();
 }
 
 //--------------------------------------------------------------------------------------------------
-void Application::pwmTimerCompare()
+void Firmware::pwmTimerCompare()
 {
     getApplicationInstance().display.pwmTimerInterrupt();
 }
@@ -77,14 +77,14 @@ void Application::pwmTimerCompare()
 // skip HAL`s interupt routine to get more performance
 extern "C" void TIM1_UP_TIM16_IRQHandler(void)
 {
-    if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_UPDATE) == SET)
+    if (__HAL_TIM_GET_FLAG(Firmware::MultiplexingPwmTimer, TIM_FLAG_UPDATE) == SET)
     {
-        __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_UPDATE);
-        Application::multiplexingTimerUpdate();
+        __HAL_TIM_CLEAR_IT(Firmware::MultiplexingPwmTimer, TIM_IT_UPDATE);
+        Firmware::multiplexingTimerUpdate();
     }
-    else if (__HAL_TIM_GET_FLAG(Application::MultiplexingPwmTimer, TIM_FLAG_CC1) == SET)
+    else if (__HAL_TIM_GET_FLAG(Firmware::MultiplexingPwmTimer, TIM_FLAG_CC1) == SET)
     {
-        __HAL_TIM_CLEAR_IT(Application::MultiplexingPwmTimer, TIM_IT_CC1);
-        Application::pwmTimerCompare();
+        __HAL_TIM_CLEAR_IT(Firmware::MultiplexingPwmTimer, TIM_IT_CC1);
+        Firmware::pwmTimerCompare();
     }
 }

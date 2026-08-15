@@ -3,7 +3,7 @@
 #include "DS3231.hpp"
 #include "wrappers/Task.hpp"
 
-#include "state_machine/buttons/Buttons.hpp"
+#include "hardware/buttons/Buttons.hpp"
 
 class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 {

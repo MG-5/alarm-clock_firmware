@@ -1,14 +1,15 @@
 #pragma once
 
-#include "LED/LedStrip.hpp"
-#include "LED/StatusLeds.hpp"
-#include "display/Display.hpp"
-#include "rtc/RealTimeClock.hpp"
-#include "state_machine/UiStateMachine.hpp"
+#include "application/ui/UiStateMachine.hpp"
+
+#include "hardware/LED/LedStrip.hpp"
+#include "hardware/LED/StatusLeds.hpp"
+#include "hardware/display/Display.hpp"
+#include "hardware/rtc/RealTimeClock.hpp"
 
 /// The entry point of users C++ firmware. This comes after CubeHAL and FreeRTOS initialization.
 /// All needed classes and objects have the root here.
-class Application
+class Firmware
 {
 public:
     static constexpr auto MultiplexingPwmTimer = &htim16;
@@ -26,16 +27,16 @@ public:
 
     static constexpr auto RtcBus = &hi2c1;
 
-    Application();
+    Firmware();
     [[noreturn]] void run();
 
-    static Application &getApplicationInstance();
+    static Firmware &getApplicationInstance();
 
     static void multiplexingTimerUpdate();
     static void pwmTimerCompare();
 
 private:
-    static inline Application *instance{nullptr};
+    static inline Firmware *instance{nullptr};
 
     void registerCallbacks();
 

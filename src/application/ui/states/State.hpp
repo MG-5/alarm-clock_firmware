@@ -1,11 +1,11 @@
 #pragma once
 
-#include "LED/LedStrip.hpp"
-#include "LED/StatusLeds.hpp"
-#include "display/Display.hpp"
-#include "rtc/RealTimeClock.hpp"
+#include "hardware/LED/LedStrip.hpp"
+#include "hardware/LED/StatusLeds.hpp"
+#include "hardware/buttons/Buttons.hpp"
+#include "hardware/display/Display.hpp"
+#include "hardware/rtc/RealTimeClock.hpp"
 
-#include "state_machine/buttons/Buttons.hpp"
 #include <functional>
 #include <optional>
 

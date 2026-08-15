@@ -42,22 +42,21 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
 )
 
-add_subdirectory(src/rtc/Time)
+add_subdirectory(src/hardware/rtc/Time)
 add_subdirectory(src/util)
 
 # Add sources to executable
 target_sources(
     ${CMAKE_PROJECT_NAME} PRIVATE
 
-    src/display/font/Font.cxx
-    src/display/Display.cxx
+    src/hardware/display/font/Font.cxx
+    src/hardware/display/Display.cxx
+    src/hardware/rtc/DS3231.cxx
+    src/hardware/rtc/RealTimeClock.cxx
 
-    src/rtc/DS3231.cxx
-    src/rtc/RealTimeClock.cxx
+    src/application/ui/UiStateMachine.cxx
 
-    src/state_machine/UiStateMachine.cxx
-
-    src/Application.cxx
+    src/Firmware.cxx
 )
 
 # Add include paths
