@@ -191,7 +191,11 @@ private:
             targetTime.addHours(1);
 
         else
+        {
+            uint8_t hourBefore = targetTime.hour;
             targetTime.addMinutes(timeToModify == TimeToModify::Clock ? 1 : 5);
+            targetTime.hour = hourBefore; // keep the hour unchanged when changing alarm minutes
+        }
 
         requestRedraw();
     }
@@ -204,7 +208,11 @@ private:
             targetTime.subHours(1);
 
         else
+        {
+            uint8_t hourBefore = targetTime.hour;
             targetTime.subMinutes(timeToModify == TimeToModify::Clock ? 1 : 5);
+            targetTime.hour = hourBefore; // keep the hour unchanged when changing alarm minutes
+        }
 
         requestRedraw();
     }

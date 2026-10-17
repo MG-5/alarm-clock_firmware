@@ -1,9 +1,11 @@
 #pragma once
 
 #include "application/ui/UiStateMachine.hpp"
+#include "application/wakeup/WakeupController.hpp"
 
 #include "hardware/LED/LedStrip.hpp"
 #include "hardware/LED/StatusLeds.hpp"
+#include "hardware/buttons/InputRouter.hpp"
 #include "hardware/display/Display.hpp"
 #include "hardware/rtc/RealTimeClock.hpp"
 
@@ -47,8 +49,11 @@ private:
     LedStrip ledStrip{LedStripPwmTimer, WarmWhiteChannel, ColdWhiteChannel};
 
     I2cAccessor i2cBusAccessor{RtcBus};
-    RealTimeClock rtc{i2cBusAccessor};
+    WakeupController wakeupController{statusLeds, ledStrip};
+    RealTimeClock rtc{i2cBusAccessor, wakeupController};
 
-    SystemComponents systemComponents{display, rtc, statusLeds, ledStrip};
-    UiStateMachine uiStateMachine{systemComponents};
+    UiStateMachine uiStateMachine{display, rtc, statusLeds, ledStrip};
+
+    Buttons buttons{};
+    InputRouter inputRouter{buttons, uiStateMachine, wakeupController};
 };

@@ -110,14 +110,37 @@ public:
         return currentLedState;
     }
 
+    // Sets the light level of LED immediately without fading. Will be gamma corrected and clamped to the maximum PWM
+    // value.
+    // @param newLevel  the new light level of LED, should be in range [0, pwmOutput.getMaximumPwmValue()]
     void setRawWarmWhiteLevel(size_t newLevel)
     {
         warmWhiteLedStrip.setLightLevel(newLevel);
     }
 
+    // Sets the light level of LED immediately without fading. Will be gamma corrected and clamped to the maximum PWM
+    // value.
+    // @param newLevel  the new light level of LED, should be in range [0, pwmOutput.getMaximumPwmValue()]
     void setRawColdWhiteLevel(size_t newLevel)
     {
         coldWhiteLedStrip.setLightLevel(newLevel);
+    }
+
+    void setBlinking(units::si::Frequency blinkFrequency)
+    {
+        warmWhiteLedStrip.setBlinking(blinkFrequency);
+        coldWhiteLedStrip.setBlinking(blinkFrequency);
+    }
+
+    void stopBlinking()
+    {
+        warmWhiteLedStrip.turnOn();
+        coldWhiteLedStrip.turnOn();
+    }
+
+    constexpr size_t getMaximumPwmValue() const
+    {
+        return PwmSteps - 1;
     }
 
 protected:

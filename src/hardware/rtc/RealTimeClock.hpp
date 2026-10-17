@@ -3,22 +3,17 @@
 #include "DS3231.hpp"
 #include "wrappers/Task.hpp"
 
+#include "application/wakeup/WakeupController.hpp"
 #include "hardware/buttons/Buttons.hpp"
 
 class RealTimeClock : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    RealTimeClock(I2cAccessor &i2cAccessor)
+    RealTimeClock(I2cAccessor &i2cAccessor, WakeupController &wakeupController)
         : TaskWithMemberFunctionBase("rtcTask", 256, osPriorityBelowNormal5), //
-          i2cAccessor(i2cAccessor) {};
-
-    enum class AlarmState
+          i2cAccessor(i2cAccessor), wakeupController(wakeupController)
     {
-        Off,
-        Sunrise,
-        Vibration,
-        Snooze
-    };
+    }
 
     enum class AlarmMode
     {
@@ -39,16 +34,6 @@ public:
     bool writeAlarmTime2(Time &newAlarmTime);
     bool writeClockTime(Time &newClockTime);
 
-    void setAlarmState(AlarmState newState)
-    {
-        alarmState = newState;
-    }
-
-    AlarmState getAlarmState() const
-    {
-        return alarmState;
-    }
-
     void setAlarmMode(AlarmMode newMode)
     {
         alarmMode = newMode;
@@ -68,21 +53,19 @@ private:
     I2cAccessor &i2cAccessor;
     DS3231 rtcModule{i2cAccessor};
 
+    WakeupController &wakeupController;
+
     bool wasRtcOnlineOnceBool = false;
 
     Time clockTime;
     Time alarmTime1;
     Time alarmTime2;
 
-    AlarmState alarmState = AlarmState::Off;
     AlarmMode alarmMode = AlarmMode::Both;
-
-    uint16_t sunriseCounter = 0;
 
     void initRTC();
     void setupRtcAndAlarms();
     void fetchClockTime();
 
     void determineAlarmTriggerState();
-    void processAlarmLogic();
 };

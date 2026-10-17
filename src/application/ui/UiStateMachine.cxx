@@ -60,16 +60,8 @@ State *UiStateMachine::getStateFromId(StateId stateId)
 }
 
 // -----------------------------------------------------------------
-void UiStateMachine::commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action)
+void UiStateMachine::handleButtonEvent(Buttons::ButtonId buttonId, util::Button::Action action)
 {
-    // check if alarm is currently active
-    if (systemComponents.rtc.getAlarmState() != RealTimeClock::AlarmState::Off)
-    {
-        // delegate all button events to RTC alarm logic
-        systemComponents.rtc.handleButtonEvents(buttonId, action);
-        return;
-    }
-
     if (buttonId == Buttons::ButtonId::Snooze)
     {
         if (action == util::Button::Action::ShortPress)
@@ -125,32 +117,6 @@ void UiStateMachine::handleStateEvent(StateEvent event, std::optional<StateId> t
 
         break;
     }
-}
-
-// -----------------------------------------------------------------
-void UiStateMachine::assignButtonCallbacks()
-{
-    // use lambda
-    buttons.left.setCallback([this](util::Button::Action action)
-                             { commonButtonCallback(Buttons::ButtonId::Left, action); });
-
-    buttons.right.setCallback([this](util::Button::Action action)
-                              { commonButtonCallback(Buttons::ButtonId::Right, action); });
-
-    buttons.snooze.setCallback([this](util::Button::Action action)
-                               { commonButtonCallback(Buttons::ButtonId::Snooze, action); });
-
-    buttons.brightnessPlus.setCallback([this](util::Button::Action action)
-                                       { commonButtonCallback(Buttons::ButtonId::BrightnessPlus, action); });
-
-    buttons.brightnessMinus.setCallback([this](util::Button::Action action)
-                                        { commonButtonCallback(Buttons::ButtonId::BrightnessMinus, action); });
-
-    buttons.cctPlus.setCallback([this](util::Button::Action action)
-                                { commonButtonCallback(Buttons::ButtonId::CCTPlus, action); });
-
-    buttons.cctMinus.setCallback([this](util::Button::Action action)
-                                 { commonButtonCallback(Buttons::ButtonId::CCTMinus, action); });
 }
 
 bool UiStateMachine::delayUntilEventOrTimeout(units::si::Time blockTime)

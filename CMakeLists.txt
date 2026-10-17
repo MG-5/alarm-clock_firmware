@@ -55,6 +55,7 @@ target_sources(
     src/hardware/rtc/RealTimeClock.cxx
 
     src/application/ui/UiStateMachine.cxx
+    src/application/wakeup/WakeupController.cxx
 
     src/Firmware.cxx
 )

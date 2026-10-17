@@ -16,11 +16,10 @@
 class UiStateMachine : public util::wrappers::TaskWithMemberFunctionBase
 {
 public:
-    UiStateMachine(SystemComponents &systemComponents)
+    UiStateMachine(Display &display, RealTimeClock &rtc, StatusLeds &statusLeds, LedStrip &ledStrip)
         : util::wrappers::TaskWithMemberFunctionBase("uiStateMachineTask", 512, osPriorityBelowNormal4), //
-          systemComponents(systemComponents)
+          systemComponents({display, rtc, statusLeds, ledStrip})
     {
-        assignButtonCallbacks();
     }
 
     ~UiStateMachine() = default;
@@ -34,12 +33,13 @@ public:
     }
 
     void handleStateEvent(StateEvent event, std::optional<StateId> targetState);
+    void handleButtonEvent(Buttons::ButtonId buttonId, util::Button::Action action);
 
 protected:
     void taskMain(void *parameters) override;
 
 private:
-    SystemComponents &systemComponents;
+    SystemComponents systemComponents;
 
     StateEventCallback stateEventCallback{
         std::bind(&UiStateMachine::handleStateEvent, this, std::placeholders::_1, std::placeholders::_2)};
@@ -59,15 +59,9 @@ private:
     bool stateChanged = false;
     bool shouldRedraw = false;
 
-    Buttons buttons{};
-
     bool isLedStripOn = false;
 
     State *getStateFromId(StateId stateId);
-
-    void commonButtonCallback(Buttons::ButtonId buttonId, util::Button::Action action);
-
-    void assignButtonCallbacks();
 
     /// block task for specified time but can be unblocked by external event e.g. button press
     /// @return true if timeout is occurred
